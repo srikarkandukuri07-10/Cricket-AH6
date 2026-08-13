@@ -83,22 +83,26 @@ router.post('/teams/:teamId/players', async (req, res) => {
   try {
     const { name, jersey_number, role, is_captain, is_wicketkeeper, avatar_url } = req.body;
     if (!name) return res.status(400).json({ error: 'Player name required' });
+    let normRole = role || 'allrounder';
+    if (normRole === 'wicketkeeper') normRole = 'allrounder'; // safe fallback for legacy db constraints
     const result = await db.query(
       `INSERT INTO players (team_id, name, jersey_number, role, is_captain, is_wicketkeeper, avatar_url)
        VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [req.params.teamId, name, jersey_number || null, role || 'allrounder',
+      [req.params.teamId, name, jersey_number || null, normRole,
        is_captain || false, is_wicketkeeper || false, avatar_url || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error: ' + err.message });
   }
 });
 
 router.put('/players/:playerId', async (req, res) => {
   try {
     const { name, jersey_number, role, is_captain, is_wicketkeeper, avatar_url } = req.body;
+    let normRole = role;
+    if (normRole === 'wicketkeeper') normRole = 'allrounder';
     const result = await db.query(
       `UPDATE players SET
         name = COALESCE($1, name),
@@ -108,13 +112,13 @@ router.put('/players/:playerId', async (req, res) => {
         is_wicketkeeper = COALESCE($5, is_wicketkeeper),
         avatar_url = COALESCE($6, avatar_url)
       WHERE id = $7 RETURNING *`,
-      [name, jersey_number, role, is_captain, is_wicketkeeper, avatar_url, req.params.playerId]
+      [name, jersey_number, normRole, is_captain, is_wicketkeeper, avatar_url, req.params.playerId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error: ' + err.message });
   }
 });
 

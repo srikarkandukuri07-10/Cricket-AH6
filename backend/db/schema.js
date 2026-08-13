@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS players (
   team_id UUID REFERENCES teams(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   jersey_number INTEGER,
-  role TEXT CHECK(role IN ('batsman','bowler','allrounder','wk')) DEFAULT 'allrounder',
+  role TEXT DEFAULT 'allrounder',
   is_captain BOOLEAN DEFAULT FALSE,
   is_wicketkeeper BOOLEAN DEFAULT FALSE,
   avatar_url TEXT,
@@ -131,6 +131,8 @@ CREATE TABLE IF NOT EXISTS fall_of_wickets (
 async function initSchema() {
   try {
     await db.query(SCHEMA);
+    // Remove legacy role constraint if exists so any role string is accepted
+    await db.query(`ALTER TABLE players DROP CONSTRAINT IF EXISTS players_role_check`).catch(() => {});
     console.log('✅ Database schema initialized');
   } catch (err) {
     console.error('❌ Schema initialization failed:', err.message);

@@ -183,6 +183,26 @@ const SetupPage: React.FC = () => {
     }
   };
 
+  const handleDeleteTeam = async (e: React.MouseEvent, teamId: string, teamName: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete team "${teamName}" and all its players?`)) return;
+    try {
+      await api.delete(`/api/admin/teams/${teamId}`);
+      toast.success(`Deleted team "${teamName}"`);
+      const { data: updatedTeams } = await api.get('/api/teams');
+      setTeams(updatedTeams);
+      if (updatedTeams.length > 0) {
+        setSelectedTeamId(updatedTeams[0].id);
+        loadSquad(updatedTeams[0].id);
+      } else {
+        setSelectedTeamId('');
+        setSelectedTeam(null);
+      }
+    } catch (e) {
+      toast.error('Failed to delete team');
+    }
+  };
+
   const handleAutoAdd10Players = async () => {
     if (!selectedTeamId || !selectedTeam) return;
 
@@ -294,21 +314,28 @@ const SetupPage: React.FC = () => {
         ) : (
           <div className="team-pill-grid">
             {teams.map(t => (
-              <button
+              <div
                 key={t.id}
-                type="button"
                 className={`team-pill-card ${selectedTeamId === t.id ? 'active' : ''}`}
-                style={{ '--accent-color': t.primary_color || '#ff5722' } as any}
+                style={{ '--accent-color': t.primary_color || '#6366f1' } as any}
                 onClick={() => selectTeam(t.id)}
               >
-                <span className="team-badge-circle" style={{ backgroundColor: t.primary_color || '#ff5722' }}>
+                <span className="team-badge-circle" style={{ backgroundColor: t.primary_color || '#6366f1' }}>
                   {t.short_name}
                 </span>
-                <div className="team-text-wrap">
+                <div className="team-text-wrap" style={{ flex: 1 }}>
                   <span className="team-name-str">{t.name}</span>
                   <span className="team-code-str">{t.short_name}</span>
                 </div>
-              </button>
+                <button
+                  type="button"
+                  className="btn-table-action delete"
+                  title={`Delete team ${t.name}`}
+                  onClick={(e) => handleDeleteTeam(e, t.id, t.name)}
+                >
+                  🗑️
+                </button>
+              </div>
             ))}
           </div>
         )}

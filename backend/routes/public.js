@@ -41,7 +41,7 @@ router.get('/teams/:teamId', async (req, res) => {
     if (teamRes.rows.length === 0) return res.status(404).json({ error: 'Team not found' });
 
     const playersRes = await db.query(
-      'SELECT * FROM players WHERE team_id = $1 ORDER BY batting_order, jersey_number, created_at',
+      'SELECT * FROM players WHERE team_id = $1 ORDER BY jersey_number ASC, name ASC, created_at ASC',
       [req.params.teamId]
     );
 

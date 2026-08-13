@@ -267,50 +267,99 @@ router.get('/matches/:matchId/balls', async (req, res) => {
   }
 });
 
-// GET /api/admin/matches/:matchId/available-bowlers (used by scorer)
+// Helper function to get squad or team players
+async function getTeamPlayersForMatch(matchId, teamId) {
+  // First check match_squads
+  const squadRes = await db.query(`
+    SELECT ms.player_id, p.name, p.role
+    FROM match_squads ms
+    JOIN players p ON ms.player_id = p.id
+    WHERE ms.match_id = $1 AND ms.team_id = $2 AND ms.is_playing_xi = true
+  `, [matchId, teamId]);
+
+  if (squadRes.rows.length > 0) {
+    return squadRes.rows;
+  }
+
+  // Fallback: get all players from the team
+  const playersRes = await db.query(`
+    SELECT id as player_id, name, role
+    FROM players
+    WHERE team_id = $1
+    ORDER BY jersey_number ASC, name ASC
+  `, [teamId]);
+
+  return playersRes.rows;
+}
+
+// GET /api/admin/matches/:matchId/available-bowlers
 router.get('/admin/matches/:matchId/available-bowlers', async (req, res) => {
   try {
     const matchRes = await db.query('SELECT * FROM matches WHERE id = $1', [req.params.matchId]);
     if (matchRes.rows.length === 0) return res.status(404).json({ error: 'Match not found' });
     const match = matchRes.rows[0];
 
+    // Determine bowling team
+    let bowlingTeamId;
     const inningsRes = await db.query(
       'SELECT * FROM innings WHERE match_id = $1 AND is_complete = false ORDER BY innings_number DESC LIMIT 1',
       [req.params.matchId]
     );
-    if (inningsRes.rows.length === 0) return res.json([]);
-    const innings = inningsRes.rows[0];
 
-    // Get bowling squad for current innings
-    const squadRes = await db.query(`
-      SELECT ms.player_id, p.name, p.role
-      FROM match_squads ms
-      JOIN players p ON ms.player_id = p.id
-      WHERE ms.match_id = $1 AND ms.team_id = $2 AND ms.is_playing_xi = true
-    `, [req.params.matchId, innings.bowling_team_id]);
+    let innings = inningsRes.rows[0];
 
-    // Get last bowler (cannot bowl consecutive)
+    if (innings) {
+      bowlingTeamId = innings.bowling_team_id;
+    } else {
+      // Innings not started yet - determine from toss or team_b
+      const firstInnings = await db.query('SELECT * FROM innings WHERE match_id = $1 AND innings_number = 1', [req.params.matchId]);
+      if (firstInnings.rows.length > 0) {
+        // Setting up Innings 2: bowling team is 1st innings batting team
+        bowlingTeamId = firstInnings.rows[0].batting_team_id;
+      } else {
+        // Setting up Innings 1: determine from toss
+        if (match.toss_winner_team_id && match.toss_decision) {
+          const tossWinner = match.toss_winner_team_id;
+          const otherTeam = match.team_a_id === tossWinner ? match.team_b_id : match.team_a_id;
+          bowlingTeamId = match.toss_decision === 'bat' ? otherTeam : tossWinner;
+        } else {
+          bowlingTeamId = match.team_b_id;
+        }
+      }
+    }
+
+    const bowlersList = await getTeamPlayersForMatch(req.params.matchId, bowlingTeamId);
+
+    if (!innings) {
+      // Innings setup phase: all bowlers available
+      return res.json(bowlersList.map(p => ({
+        player_id: p.player_id,
+        name: p.name,
+        role: p.role,
+        can_bowl: true,
+        overs_bowled: 0,
+        is_last_over_bowler: false,
+      })));
+    }
+
+    // Get last bowler
     const lastBallRes = await db.query(
       'SELECT bowler_id FROM ball_events WHERE innings_id = $1 AND is_legal_delivery = true ORDER BY sequence_number DESC LIMIT 6',
       [innings.id]
     );
 
-    // Find who bowled the last completed over
     let lastOverBowlerId = null;
     if (lastBallRes.rows.length === 6) {
-      // Check if the last 6 legal balls were all from same bowler (last over)
       const bowlerCounts = {};
       lastBallRes.rows.forEach(b => {
         bowlerCounts[b.bowler_id] = (bowlerCounts[b.bowler_id] || 0) + 1;
       });
-      // If last ball's bowler bowled all 6 of those balls, they just completed an over
       const lastBowler = lastBallRes.rows[0].bowler_id;
       if (bowlerCounts[lastBowler] === 6) {
         lastOverBowlerId = lastBowler;
       }
     }
 
-    // Get overs bowled by each player
     const oversBowledRes = await db.query(`
       SELECT bowler_id, COUNT(*) as legal_balls
       FROM ball_events
@@ -325,7 +374,7 @@ router.get('/admin/matches/:matchId/available-bowlers', async (req, res) => {
 
     const maxOvers = engine.getMaxOversPerBowler(match.overs_per_innings, match.max_overs_per_bowler);
 
-    const bowlers = squadRes.rows.map(p => ({
+    const bowlers = bowlersList.map(p => ({
       player_id: p.player_id,
       name: p.name,
       role: p.role,
@@ -337,7 +386,7 @@ router.get('/admin/matches/:matchId/available-bowlers', async (req, res) => {
 
     res.json(bowlers);
   } catch (err) {
-    console.error(err);
+    console.error('Available bowlers error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -345,23 +394,47 @@ router.get('/admin/matches/:matchId/available-bowlers', async (req, res) => {
 // GET /api/admin/matches/:matchId/available-batters
 router.get('/admin/matches/:matchId/available-batters', async (req, res) => {
   try {
+    const matchRes = await db.query('SELECT * FROM matches WHERE id = $1', [req.params.matchId]);
+    if (matchRes.rows.length === 0) return res.status(404).json({ error: 'Match not found' });
+    const match = matchRes.rows[0];
+
+    // Determine batting team
+    let battingTeamId;
     const inningsRes = await db.query(
       'SELECT * FROM innings WHERE match_id = $1 AND is_complete = false ORDER BY innings_number DESC LIMIT 1',
       [req.params.matchId]
     );
-    if (inningsRes.rows.length === 0) return res.json([]);
-    const innings = inningsRes.rows[0];
 
-    // Get batting squad
-    const squadRes = await db.query(`
-      SELECT ms.player_id, p.name, ms.batting_order
-      FROM match_squads ms
-      JOIN players p ON ms.player_id = p.id
-      WHERE ms.match_id = $1 AND ms.team_id = $2 AND ms.is_playing_xi = true
-      ORDER BY ms.batting_order ASC
-    `, [req.params.matchId, innings.batting_team_id]);
+    let innings = inningsRes.rows[0];
 
-    // Get players who have already batted (appeared in ball events)
+    if (innings) {
+      battingTeamId = innings.batting_team_id;
+    } else {
+      // Innings not started yet - determine from toss or team_a
+      const firstInnings = await db.query('SELECT * FROM innings WHERE match_id = $1 AND innings_number = 1', [req.params.matchId]);
+      if (firstInnings.rows.length > 0) {
+        // Setting up Innings 2: batting team is 1st innings bowling team
+        battingTeamId = firstInnings.rows[0].bowling_team_id;
+      } else {
+        // Setting up Innings 1: determine from toss
+        if (match.toss_winner_team_id && match.toss_decision) {
+          const tossWinner = match.toss_winner_team_id;
+          const otherTeam = match.team_a_id === tossWinner ? match.team_b_id : match.team_a_id;
+          battingTeamId = match.toss_decision === 'bat' ? tossWinner : otherTeam;
+        } else {
+          battingTeamId = match.team_a_id;
+        }
+      }
+    }
+
+    const battersList = await getTeamPlayersForMatch(req.params.matchId, battingTeamId);
+
+    if (!innings) {
+      // Innings setup phase: all batters in the team are available
+      return res.json(battersList);
+    }
+
+    // Get players who have already batted
     const battedRes = await db.query(`
       SELECT DISTINCT striker_id as player_id FROM ball_events WHERE innings_id = $1
       UNION
@@ -383,14 +456,14 @@ router.get('/admin/matches/:matchId/available-batters', async (req, res) => {
       if (lb.next_non_striker_id) currentBatsmen.add(lb.next_non_striker_id);
     }
 
-    // Return players who have NOT batted yet (exclude already batted and current batsmen)
-    const available = squadRes.rows.filter(p =>
+    // Return players who have NOT batted yet
+    const available = battersList.filter(p =>
       !battedIds.has(p.player_id) && !currentBatsmen.has(p.player_id)
     );
 
     res.json(available);
   } catch (err) {
-    console.error(err);
+    console.error('Available batters error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

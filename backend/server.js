@@ -94,8 +94,7 @@ async function startServer() {
     server.listen(PORT, () => {
       console.log(`\n🏏 AH6 Cricket Backend running on port ${PORT}`);
       console.log(`   Health: http://localhost:${PORT}/health`);
-      console.log(`   Scorer: ${process.env.SCORER_EMAIL}`);
-      console.log(`   Allowed origins: ${allowedOrigins.join(', ')}\n`);
+      console.log(`   Scorer: ${process.env.SCORER_EMAIL}\n`);
     });
   } catch (err) {
     console.error('Failed to start server:', err);

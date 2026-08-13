@@ -203,25 +203,14 @@ const SetupPage: React.FC = () => {
     }
   };
 
-  const handleAutoAdd10Players = async () => {
-    if (!selectedTeamId || !selectedTeam) return;
-
+  const handleClearSquad = async (teamId: string, teamName: string) => {
+    if (!window.confirm(`Are you sure you want to delete all squad players for team "${teamName}"?`)) return;
     try {
-      const defaultRoles = ['batsman', 'batsman', 'batsman', 'allrounder', 'allrounder', 'allrounder', 'wicketkeeper', 'bowler', 'bowler', 'bowler'];
-      const prefix = selectedTeam.short_name || 'Player';
-      for (let i = 1; i <= 10; i++) {
-        await api.post(`/api/admin/teams/${selectedTeamId}/players`, {
-          name: `${prefix} Player ${i}`,
-          jersey_number: i,
-          role: defaultRoles[i - 1],
-          is_captain: i === 1,
-          is_wicketkeeper: i === 7,
-        });
-      }
-      toast.success('Generated 10 squad members! You can edit their names below.');
-      loadSquad(selectedTeamId);
+      await api.delete(`/api/admin/teams/${teamId}/players`);
+      toast.success(`Cleared all squad members for ${teamName}`);
+      loadSquad(teamId);
     } catch (e) {
-      toast.error('Failed to auto-generate squad');
+      toast.error('Failed to clear squad');
     }
   };
 
@@ -431,13 +420,15 @@ const SetupPage: React.FC = () => {
                 <h2>👥 {selectedTeam.name} Roster</h2>
                 <span className="subtext-pill">{selectedTeam.players?.length || 0} Players Registered</span>
               </div>
-              <button
-                type="button"
-                className="btn-stitch-secondary btn-compact"
-                onClick={handleAutoAdd10Players}
-              >
-                ⚡ Auto-Generate 10 Squad Members
-              </button>
+              {selectedTeam.players && selectedTeam.players.length > 0 && (
+                <button
+                  type="button"
+                  className="btn-table-action delete"
+                  onClick={() => handleClearSquad(selectedTeam.id, selectedTeam.name)}
+                >
+                  🗑️ Clear All Squad Players
+                </button>
+              )}
             </div>
 
             {loadingSquad ? (
@@ -446,7 +437,7 @@ const SetupPage: React.FC = () => {
               <div className="empty-squad-box p-6">
                 <span className="empty-icon">🏏</span>
                 <h3>No players added yet</h3>
-                <p>Use the form on the left to add players by name, or click <strong>"⚡ Auto-Generate 10 Squad Members"</strong> to add 10 default player slots instantly!</p>
+                <p>Use the form on the left to add your real team members with their names, roles & jersey numbers!</p>
               </div>
             ) : (
               <div className="table-wrapper">

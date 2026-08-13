@@ -87,6 +87,16 @@ router.delete('/teams/:teamId', async (req, res) => {
   }
 });
 
+router.delete('/teams/:teamId/players', async (req, res) => {
+  try {
+    await db.query('DELETE FROM players WHERE team_id = $1', [req.params.teamId]);
+    res.json({ success: true, message: 'All squad players deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+});
+
 // ===================== PLAYERS =====================
 
 router.post('/teams/:teamId/players', async (req, res) => {

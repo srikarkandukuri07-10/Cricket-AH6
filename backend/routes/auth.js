@@ -6,10 +6,11 @@ const router = express.Router();
 // Single shared scorer account — credentials from environment variables
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const userEmail = req.body.email || req.body.username;
+    const { password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required', code: 'MISSING_FIELDS' });
+    if (!userEmail || !password) {
+      return res.status(400).json({ error: 'Email/Username and password required', code: 'MISSING_FIELDS' });
     }
 
     const expectedEmail = process.env.SCORER_EMAIL;
@@ -19,7 +20,7 @@ router.post('/login', async (req, res) => {
       return res.status(500).json({ error: 'Server not configured', code: 'SERVER_ERROR' });
     }
 
-    if (email.toLowerCase() !== expectedEmail.toLowerCase()) {
+    if (userEmail.toLowerCase() !== expectedEmail.toLowerCase()) {
       return res.status(401).json({ error: 'Invalid credentials', code: 'INVALID_CREDENTIALS' });
     }
 

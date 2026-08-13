@@ -362,19 +362,6 @@ const SetupPage: React.FC = () => {
                 />
               </div>
 
-              <div className="input-group">
-                <label>Player Specialization / Role</label>
-                <select
-                  value={playerRole}
-                  onChange={e => setPlayerRole(e.target.value as any)}
-                >
-                  <option value="allrounder">⚡ All-Rounder</option>
-                  <option value="batsman">🏏 Batter</option>
-                  <option value="bowler">🎳 Bowler</option>
-                  <option value="wicketkeeper">🧤 Wicketkeeper</option>
-                </select>
-              </div>
-
               <div className="checkbox-group-row">
                 <label className="custom-checkbox">
                   <input
@@ -446,7 +433,6 @@ const SetupPage: React.FC = () => {
                     <tr>
                       <th>#</th>
                       <th>Player Name</th>
-                      <th>Role</th>
                       <th className="text-right">Actions</th>
                     </tr>
                   </thead>
@@ -458,14 +444,6 @@ const SetupPage: React.FC = () => {
                           <span className="player-fullname">{p.name}</span>
                           {p.is_captain && <span className="tag-badge gold ml-2">👑 Captain</span>}
                           {p.is_wicketkeeper && <span className="tag-badge blue ml-1">🧤 WK</span>}
-                        </td>
-                        <td>
-                          <span className={`role-chip role-${p.role}`}>
-                            {p.role === 'batsman' && '🏏 Batter'}
-                            {p.role === 'bowler' && '🎳 Bowler'}
-                            {p.role === 'allrounder' && '⚡ All-Rounder'}
-                            {p.role === 'wicketkeeper' && '🧤 Wicketkeeper'}
-                          </span>
                         </td>
                         <td className="actions-col text-right">
                           <button

@@ -79,10 +79,17 @@ router.put('/teams/:teamId', async (req, res) => {
 
 router.delete('/teams/:teamId', async (req, res) => {
   try {
-    await db.query('DELETE FROM teams WHERE id = $1', [req.params.teamId]);
-    res.json({ success: true, message: 'Team deleted' });
+    const teamId = req.params.teamId;
+    await db.query('DELETE FROM ball_events WHERE match_id IN (SELECT id FROM matches WHERE team_a_id = $1 OR team_b_id = $1)', [teamId]);
+    await db.query('DELETE FROM fall_of_wickets WHERE innings_id IN (SELECT id FROM innings WHERE batting_team_id = $1 OR bowling_team_id = $1)', [teamId]);
+    await db.query('DELETE FROM innings WHERE batting_team_id = $1 OR bowling_team_id = $1', [teamId]);
+    await db.query('DELETE FROM match_squads WHERE team_id = $1 OR match_id IN (SELECT id FROM matches WHERE team_a_id = $1 OR team_b_id = $1)', [teamId]);
+    await db.query('DELETE FROM matches WHERE team_a_id = $1 OR team_b_id = $1', [teamId]);
+    await db.query('DELETE FROM players WHERE team_id = $1', [teamId]);
+    await db.query('DELETE FROM teams WHERE id = $1', [teamId]);
+    res.json({ success: true, message: 'Team deleted successfully' });
   } catch (err) {
-    console.error(err);
+    console.error('Delete team error:', err);
     res.status(500).json({ error: 'Server error: ' + err.message });
   }
 });

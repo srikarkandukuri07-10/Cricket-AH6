@@ -28,45 +28,68 @@ const InningsSetupPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (striker === nonStriker) return toast.error('Striker and Non-striker must be different');
+    if (striker === nonStriker) return toast.error('Striker and Non-striker must be different players');
     try {
       await api.post(`/api/admin/matches/${matchId}/start-innings`, {
-        striker_id: striker, non_striker_id: nonStriker, bowler_id: bowler
+        striker_id: striker,
+        non_striker_id: nonStriker,
+        bowler_id: bowler
       });
       toast.success('Innings Started!');
       navigate(`/matches/${matchId}/score`);
-    } catch (e) { toast.error('Failed to start innings'); }
+    } catch (e) {
+      toast.error('Failed to start innings');
+    }
   };
 
-  if (loading || !matchState) return <div>Loading...</div>;
+  if (loading || !matchState) return <div className="setup-container text-center p-8"><p className="text-muted">Loading innings setup...</p></div>;
 
   return (
-    <div className="container max-w-md">
-      <h2>Innings Setup</h2>
-      <div className="card">
-        <form onSubmit={handleSubmit} className="form-col">
-          <div className="form-group">
-            <label>Striker</label>
-            <select value={striker} onChange={e=>setStriker(e.target.value)} required>
-              <option value="">Select Striker</option>
-              {batters.map(b => <option key={b.player_id} value={b.player_id}>{b.name}</option>)}
+    <div className="setup-container max-width-600">
+      <div className="page-header-row">
+        <div>
+          <h1 className="page-title">🏏 Start Innings</h1>
+          <p className="page-description">Select opening batter on strike, non-striker, and opening bowler</p>
+        </div>
+      </div>
+
+      <div className="stitch-card border-glow">
+        <form onSubmit={handleSubmit} className="stitch-form-stack">
+          <div className="input-group">
+            <label>🏏 Opening Striker *</label>
+            <select value={striker} onChange={e => setStriker(e.target.value)} required>
+              <option value="">-- Select Striker --</option>
+              {batters.map(b => (
+                <option key={b.player_id} value={b.player_id}>{b.name}</option>
+              ))}
             </select>
           </div>
-          <div className="form-group">
-            <label>Non-Striker</label>
-            <select value={nonStriker} onChange={e=>setNonStriker(e.target.value)} required>
-              <option value="">Select Non-Striker</option>
-              {batters.map(b => <option key={b.player_id} value={b.player_id}>{b.name}</option>)}
+
+          <div className="input-group">
+            <label>🏏 Opening Non-Striker *</label>
+            <select value={nonStriker} onChange={e => setNonStriker(e.target.value)} required>
+              <option value="">-- Select Non-Striker --</option>
+              {batters.map(b => (
+                <option key={b.player_id} value={b.player_id}>{b.name}</option>
+              ))}
             </select>
           </div>
-          <div className="form-group">
-            <label>Opening Bowler</label>
-            <select value={bowler} onChange={e=>setBowler(e.target.value)} required>
-              <option value="">Select Bowler</option>
-              {bowlers.filter(b => b.can_bowl).map(b => <option key={b.player_id} value={b.player_id}>{b.name}</option>)}
+
+          <div className="input-group">
+            <label>🎳 Opening Bowler *</label>
+            <select value={bowler} onChange={e => setBowler(e.target.value)} required>
+              <option value="">-- Select Opening Bowler --</option>
+              {bowlers.filter(b => b.can_bowl).map(b => (
+                <option key={b.player_id} value={b.player_id}>{b.name}</option>
+              ))}
             </select>
           </div>
-          <button type="submit" className="btn btn-primary full-width mt-4">Start Scoring</button>
+
+          <div className="form-action-buttons mt-4">
+            <button type="submit" className="btn-stitch-primary width-100">
+              ⚡ Start Scoring Live Match
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -8,51 +8,95 @@ const TossPage: React.FC = () => {
   const navigate = useNavigate();
   const [match, setMatch] = useState<any>(null);
   const [winnerId, setWinnerId] = useState('');
-  const [decision, setDecision] = useState<'bat'|'bowl'|''>('');
+  const [decision, setDecision] = useState<'bat' | 'bowl' | ''>('');
 
   useEffect(() => {
-    api.get(`/api/matches/${matchId}`).then(({data}) => setMatch(data));
+    api.get(`/api/matches/${matchId}`).then(({ data }) => setMatch(data));
   }, [matchId]);
 
   const handleSubmit = async () => {
-    if (!winnerId || !decision) return toast.error('Select winner and decision');
+    if (!winnerId || !decision) return toast.error('Select toss winner and decision');
     try {
-      await api.post(`/api/admin/matches/${matchId}/toss`, { toss_winner_team_id: winnerId, toss_decision: decision });
-      toast.success('Toss recorded');
+      await api.post(`/api/admin/matches/${matchId}/toss`, {
+        toss_winner_team_id: winnerId,
+        toss_decision: decision
+      });
+      toast.success('Toss recorded!');
       navigate(`/matches/${matchId}/innings-setup`);
     } catch (e) {
       toast.error('Failed to save toss');
     }
   };
 
-  if (!match) return null;
+  if (!match) return <div className="setup-container text-center p-8"><p className="text-muted">Loading match...</p></div>;
 
   return (
-    <div className="container max-w-md toss-page">
-      <h2>Toss</h2>
-      <div className="card text-center">
-        <h3>Who won the toss?</h3>
-        <div className="toss-buttons">
-          <button className={`btn ${winnerId === match.team_a.id ? 'btn-primary' : ''}`} onClick={() => setWinnerId(match.team_a.id)}>
-            {match.team_a.name}
+    <div className="setup-container max-width-600">
+      <div className="page-header-row">
+        <div>
+          <h1 className="page-title">🪙 Match Toss</h1>
+          <p className="page-description">Record toss winner and election to bat or bowl</p>
+        </div>
+      </div>
+
+      <div className="stitch-card border-glow text-center p-6">
+        <h3 className="section-tag mb-4">WHO WON THE TOSS?</h3>
+
+        <div className="toss-choice-grid mb-6">
+          <button
+            type="button"
+            className={`toss-choice-card ${winnerId === match.team_a.id ? 'active' : ''}`}
+            onClick={() => setWinnerId(match.team_a.id)}
+          >
+            <span className="team-avatar" style={{ backgroundColor: match.team_a.primary_color || '#ff5722' }}>
+              {match.team_a.short_name}
+            </span>
+            <span className="choice-name">{match.team_a.name}</span>
           </button>
-          <button className={`btn ${winnerId === match.team_b.id ? 'btn-primary' : ''}`} onClick={() => setWinnerId(match.team_b.id)}>
-            {match.team_b.name}
+
+          <button
+            type="button"
+            className={`toss-choice-card ${winnerId === match.team_b.id ? 'active' : ''}`}
+            onClick={() => setWinnerId(match.team_b.id)}
+          >
+            <span className="team-avatar" style={{ backgroundColor: match.team_b.primary_color || '#00b0ff' }}>
+              {match.team_b.short_name}
+            </span>
+            <span className="choice-name">{match.team_b.name}</span>
           </button>
         </div>
-        
+
         {winnerId && (
-          <>
-            <h3 className="mt-4">Decision</h3>
-            <div className="toss-buttons">
-              <button className={`btn ${decision === 'bat' ? 'btn-primary' : ''}`} onClick={() => setDecision('bat')}>BAT</button>
-              <button className={`btn ${decision === 'bowl' ? 'btn-primary' : ''}`} onClick={() => setDecision('bowl')}>BOWL</button>
+          <div className="mt-6 border-top-subtle pt-6">
+            <h3 className="section-tag mb-4">ELECTED TO:</h3>
+            <div className="toss-choice-grid mb-6">
+              <button
+                type="button"
+                className={`toss-choice-card ${decision === 'bat' ? 'active' : ''}`}
+                onClick={() => setDecision('bat')}
+              >
+                <span className="choice-icon">🏏</span>
+                <span className="choice-name">BAT FIRST</span>
+              </button>
+
+              <button
+                type="button"
+                className={`toss-choice-card ${decision === 'bowl' ? 'active' : ''}`}
+                onClick={() => setDecision('bowl')}
+              >
+                <span className="choice-icon">🎳</span>
+                <span className="choice-name">BOWL FIRST</span>
+              </button>
             </div>
-          </>
+          </div>
         )}
-        
-        <button className="btn btn-primary mt-4 full-width" onClick={handleSubmit} disabled={!winnerId || !decision}>
-          Start Match
+
+        <button
+          className="btn-stitch-primary width-100 mt-4"
+          onClick={handleSubmit}
+          disabled={!winnerId || !decision}
+        >
+          🚀 Confirm Toss & Setup Innings
         </button>
       </div>
     </div>

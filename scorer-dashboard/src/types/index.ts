@@ -91,6 +91,8 @@ export interface Team {
   id: string;
   name: string;
   short_name: string;
+  primary_color?: string;
+  logo_url?: string | null;
 }
 
 export interface Match {

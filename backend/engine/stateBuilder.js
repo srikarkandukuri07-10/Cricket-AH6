@@ -96,14 +96,24 @@ async function buildMatchState(matchId) {
         target: currentInnings.target,
       });
 
-      // Build player name maps
+      // Build player name maps - pre-seed with all team players for 100% name accuracy
       const playerNames = {};
+      const allPlayersRes = await db.query(
+        `SELECT id, name FROM players WHERE team_id IN ($1, $2)`,
+        [match.team_a_id, match.team_b_id]
+      );
+      allPlayersRes.rows.forEach(p => {
+        playerNames[p.id] = p.name;
+      });
+
       balls.forEach(b => {
-        if (b.striker_id) playerNames[b.striker_id] = b.striker_name;
-        if (b.non_striker_id) playerNames[b.non_striker_id] = b.non_striker_name;
-        if (b.bowler_id) playerNames[b.bowler_id] = b.bowler_name;
-        if (b.dismissed_batter_id) playerNames[b.dismissed_batter_id] = b.dismissed_batter_name;
-        if (b.fielder_id) playerNames[b.fielder_id] = b.fielder_name;
+        if (b.striker_id && b.striker_name) playerNames[b.striker_id] = b.striker_name;
+        if (b.non_striker_id && b.non_striker_name) playerNames[b.non_striker_id] = b.non_striker_name;
+        if (b.bowler_id && b.bowler_name) playerNames[b.bowler_id] = b.bowler_name;
+        if (b.dismissed_batter_id && b.dismissed_batter_name) playerNames[b.dismissed_batter_id] = b.dismissed_batter_name;
+        if (b.fielder_id && b.fielder_name) playerNames[b.fielder_id] = b.fielder_name;
+        if (b.next_striker_id && b.next_striker_name) playerNames[b.next_striker_id] = b.next_striker_name;
+        if (b.next_non_striker_id && b.next_non_striker_name) playerNames[b.next_non_striker_id] = b.next_non_striker_name;
       });
 
       // Build batting array (all batters who appeared, sorted by batting position)

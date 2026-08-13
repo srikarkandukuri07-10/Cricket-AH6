@@ -10,16 +10,15 @@ const LiveScoringPage: React.FC = () => {
   const navigate = useNavigate();
   const { matchState, loading } = useMatchState(matchId);
   const [submitting, setSubmitting] = useState(false);
-  const [pendingBowlerId, setPendingBowlerId] = useState<string | null>(null);
 
   // Modals
   const [showBowlerModal, setShowBowlerModal] = useState(false);
   const [showWicketModal, setShowWicketModal] = useState(false);
-  const [showExtrasModal, setShowExtrasModal] = useState<{type: string} | null>(null);
-  
+  const [showExtrasModal, setShowExtrasModal] = useState<{ type: string } | null>(null);
+
   const [availableBowlers, setAvailableBowlers] = useState<any[]>([]);
   const [availableBatters, setAvailableBatters] = useState<any[]>([]);
-  
+
   // Wicket form state
   const [wType, setWType] = useState('bowled');
   const [wFielder] = useState('');
@@ -30,7 +29,7 @@ const LiveScoringPage: React.FC = () => {
   useEffect(() => {
     if (!matchState) return;
     const socket = getSocket();
-    
+
     const handleOverComplete = () => {
       loadBowlers();
       setShowBowlerModal(true);
@@ -41,10 +40,10 @@ const LiveScoringPage: React.FC = () => {
         navigate('/');
       }
     };
-    
+
     socket.on('over_complete', handleOverComplete);
     socket.on('match_status_change', handleStatusChange);
-    
+
     return () => {
       socket.off('over_complete', handleOverComplete);
       socket.off('match_status_change', handleStatusChange);
@@ -52,198 +51,399 @@ const LiveScoringPage: React.FC = () => {
   }, [matchState, navigate]);
 
   const loadBowlers = async () => {
-    const { data } = await api.get(`/api/admin/matches/${matchId}/available-bowlers`);
-    setAvailableBowlers(data);
-  };
-  
-  const loadBatters = async () => {
-    const { data } = await api.get(`/api/admin/matches/${matchId}/available-batters`);
-    setAvailableBatters(data);
+    try {
+      const { data } = await api.get(`/api/admin/matches/${matchId}/available-bowlers`);
+      setAvailableBowlers(data);
+    } catch (e) {
+      toast.error('Failed to load bowlers');
+    }
   };
 
-  const recordBall = async (payload: any) => {
-    if (submitting || !matchState?.current_innings) return;
+  const loadBatters = async () => {
+    try {
+      const { data } = await api.get(`/api/admin/matches/${matchId}/available-batters`);
+      setAvailableBatters(data);
+    } catch (e) {
+      toast.error('Failed to load batters');
+    }
+  };
+
+  const recordBall = async (ballPayload: any) => {
+    if (!matchState?.current_innings?.id) return;
     setSubmitting(true);
     try {
-      const body = { ...payload };
-      if (pendingBowlerId) {
-        body.bowler_id = pendingBowlerId;
-      }
-      await api.post(`/api/admin/innings/${matchState.current_innings.id}/balls`, body);
-      setPendingBowlerId(null);
-    } catch (e: any) {
-      toast.error(e.response?.data?.error || 'Failed to record ball');
+      await api.post(`/api/admin/innings/${matchState.current_innings.id}/balls`, ballPayload);
+    } catch (err: any) {
+      const msg = err.response?.data?.error || 'Failed to record ball';
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
   const undoLastBall = async () => {
-    if (!matchState?.current_innings || submitting) return;
-    if (!window.confirm('Undo last ball?')) return;
+    if (!matchState?.current_innings?.id) return;
+    if (!window.confirm('Are you sure you want to undo the last ball?')) return;
     setSubmitting(true);
     try {
       await api.delete(`/api/admin/innings/${matchState.current_innings.id}/balls/last`);
-      toast.success('Undo successful');
-    } catch (e) { toast.error('Undo failed'); }
-    finally { setSubmitting(false); }
+      toast.success('Last ball undone');
+    } catch (err: any) {
+      toast.error('Failed to undo ball');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  // Modals handlers
-  const handleWicketSubmit = (e: React.FormEvent) => {
+  const handleWicketSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wDismissed || !wNewBatter) return toast.error('Select batters');
-    
-    recordBall({
-      bat_runs: 0, extra_runs: 0, extra_type: 'none',
-      is_wicket: true, dismissal_type: wType,
-      dismissed_batter_id: wDismissed,
+    await recordBall({
+      bat_runs: 0,
+      extra_runs: 0,
+      extra_type: 'none',
+      is_wicket: true,
+      dismissal_type: wType,
+      dismissed_batter_id: wDismissed || matchState?.current_striker?.player_id,
       fielder_id: wFielder || null,
-      bowler_gets_wicket: ['bowled','caught','lbw','stumped','hitwicket'].includes(wType),
-      new_batter_id: wNewBatter,
+      bowler_gets_wicket: ['bowled', 'caught', 'lbw', 'stumped', 'hitwicket'].includes(wType),
+      new_batter_id: wNewBatter || null,
       new_batter_is_striker: wNewBatterStriker
     });
     setShowWicketModal(false);
   };
 
-  if (loading || !matchState) return <div className="loading">Loading...</div>;
+  if (loading || !matchState) {
+    return (
+      <div className="setup-container text-center p-8">
+        <p className="text-muted">Loading live scoring engine...</p>
+      </div>
+    );
+  }
 
   const { current_innings, current_striker, current_non_striker, current_bowler } = matchState;
 
   return (
-    <div className="scoring-page">
-      <div className="scoring-header">
-        <div className="match-title">{matchState.team_a.short_name} vs {matchState.team_b.short_name}</div>
-        <div className="header-actions">
-          <button className="btn btn-small" onClick={undoLastBall} disabled={submitting}>UNDO</button>
+    <div className="setup-container max-width-600">
+      {/* Top Action Header */}
+      <div className="page-header-row mb-4">
+        <div>
+          <h1 className="page-title" style={{ fontSize: '1.6rem' }}>
+            {matchState.team_a.short_name} <span style={{ color: 'var(--primary-indigo)' }}>VS</span> {matchState.team_b.short_name}
+          </h1>
+          <p className="page-description">{matchState.name || 'AH6 Tournament Match'}</p>
         </div>
+        <button
+          className="btn-stitch-secondary btn-compact"
+          onClick={undoLastBall}
+          disabled={submitting}
+        >
+          ↩️ Undo Ball
+        </button>
       </div>
 
-      <div className="score-card">
-        <div className="score-main">
-          <h1>{current_innings?.total_runs}/{current_innings?.total_wickets}</h1>
-          <span className="overs">{current_innings?.overs_display}</span>
+      {/* Hero Score Banner */}
+      <div className="hero-stat-card mb-4">
+        <div className="flex-between">
+          <span className="hero-stat-header">
+            {current_innings?.batting_team_name || 'BATTING'} INNINGS
+          </span>
+          <span className="live-badge">
+            <span className="pulse-dot"></span> LIVE
+          </span>
         </div>
-        <div className="score-sub">
-          CRR: {current_innings?.crr.toFixed(2)} {current_innings?.target ? ` | Target: ${current_innings.target}` : ''}
-        </div>
-      </div>
 
-      <div className="recent-balls card">
-        <span>Recent: </span>
-        <div className="balls-list">
-          {matchState.recent_balls.slice(-6).map((b, i) => (
-            <span key={i} className={`ball-chip ${b.isWicket ? 'wicket' : b.display.includes('4') ? 'four' : b.display.includes('6') ? 'six' : b.extraType !== 'none' ? 'extra' : 'dot'}`}>
-              {b.display}
+        <div className="score-digits-row my-3">
+          <h1 className="main-score-digits">
+            {current_innings?.total_runs || 0} / {current_innings?.total_wickets || 0}
+          </h1>
+          <span className="overs-text">
+            ({current_innings?.overs_display || '0.0'} Overs)
+          </span>
+        </div>
+
+        <div className="flex-between border-top-subtle pt-3" style={{ opacity: 0.9, fontSize: '0.9rem' }}>
+          <span>CRR: {current_innings?.crr ? current_innings.crr.toFixed(2) : '0.00'}</span>
+          {current_innings?.target && (
+            <span className="text-gold font-bold">
+              Target: {current_innings.target} ({current_innings.runs_needed} runs from {current_innings.balls_remaining} balls)
             </span>
-          ))}
+          )}
         </div>
       </div>
 
-      {matchState.is_free_hit && <div className="free-hit-banner">FREE HIT 🔥 next ball</div>}
-
-      <div className="players-card card">
-        <div className="batters-list">
-          {current_striker && <div>🏏 {current_striker.name}* {current_striker.runs}({current_striker.balls})</div>}
-          {current_non_striker && <div>   {current_non_striker.name} {current_non_striker.runs}({current_non_striker.balls})</div>}
+      {/* Recent Balls Strip */}
+      <div className="stitch-card mb-4 p-4">
+        <div className="flex-between mb-2">
+          <span className="section-tag">RECENT DELIVERIES</span>
         </div>
-        <hr className="divider" />
-        <div className="current-bowler">
-          {current_bowler ? `🎳 ${current_bowler.name} ${current_bowler.overs_display}-X-${current_bowler.runs_conceded}-${current_bowler.wickets}` : 'No Bowler Selected'}
+        <div className="recent-balls-container">
+          {matchState.recent_balls.length === 0 ? (
+            <span className="text-muted text-sm">No balls bowled in this innings yet</span>
+          ) : (
+            matchState.recent_balls.slice(-8).map((b, i) => (
+              <span
+                key={i}
+                className={`ball-chip ${
+                  b.isWicket
+                    ? 'chip-w'
+                    : b.display.includes('6')
+                    ? 'chip-6'
+                    : b.display.includes('4')
+                    ? 'chip-4'
+                    : b.extraType !== 'none'
+                    ? 'chip-extra'
+                    : b.display === '0' || b.display === '•'
+                    ? 'chip-dot'
+                    : 'chip-run'
+                }`}
+              >
+                {b.display === '0' ? '•' : b.display}
+              </span>
+            ))
+          )}
         </div>
       </div>
 
-      <div className="scoring-grid">
-        {[6,4,3,2,1,0].map(r => (
-          <button key={r} className={`btn btn-score btn-${r}`} disabled={submitting} 
-            onClick={() => recordBall({ bat_runs: r, extra_runs: 0, extra_type: 'none', is_wicket: false })}>
-            {r === 0 ? '•' : r}
+      {matchState.is_free_hit && (
+        <div className="free-hit-banner-box mb-4">
+          🔥 FREE HIT! Next delivery cannot be dismissed (except Run Out)
+        </div>
+      )}
+
+      {/* Active Batters & Bowler Card */}
+      <div className="stitch-card mb-4">
+        <h3 className="section-tag mb-3">CURRENT BATSMEN</h3>
+        <div className="active-batsman-row mb-2 flex-between">
+          <div>
+            <span className="font-bold text-dark">🏏 {current_striker?.name || 'Striker'} *</span>
+          </div>
+          <div className="font-bold">
+            {current_striker?.runs || 0} <span className="text-muted font-normal">({current_striker?.balls || 0}b)</span>
+          </div>
+        </div>
+
+        <div className="active-batsman-row mb-4 flex-between">
+          <div>
+            <span className="text-body">{current_non_striker?.name || 'Non-Striker'}</span>
+          </div>
+          <div className="font-bold text-body">
+            {current_non_striker?.runs || 0} <span className="text-muted font-normal">({current_non_striker?.balls || 0}b)</span>
+          </div>
+        </div>
+
+        <div className="border-top-subtle pt-3 flex-between">
+          <span className="section-tag">BOWLER</span>
+          <span className="font-bold text-dark">
+            🎳 {current_bowler ? `${current_bowler.name} (${current_bowler.overs_display} ov - ${current_bowler.wickets}w - ${current_bowler.runs_conceded}r)` : 'No Bowler Selected'}
+          </span>
+        </div>
+      </div>
+
+      {/* Main Scoring Pad Grid */}
+      <div className="stitch-card p-6">
+        <h3 className="section-tag mb-4 text-center">SCORING PAD</h3>
+
+        <div className="scoring-pad-grid">
+          <button
+            className="score-btn score-6"
+            disabled={submitting}
+            onClick={() => recordBall({ bat_runs: 6, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+          >
+            6
           </button>
-        ))}
-        
-        <button className="btn btn-score btn-w" disabled={submitting} onClick={() => {
-          setWDismissed(current_striker?.player_id || '');
-          loadBatters();
-          setShowWicketModal(true);
-        }}>WICKET</button>
-        
-        {['NB', 'WIDE', 'BY', 'LB'].map(xt => (
-          <button key={xt} className="btn btn-score btn-extra" disabled={submitting}
-            onClick={() => setShowExtrasModal({ type: xt })}>
-            {xt}
+          <button
+            className="score-btn score-4"
+            disabled={submitting}
+            onClick={() => recordBall({ bat_runs: 4, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+          >
+            4
           </button>
-        ))}
+          <button
+            className="score-btn score-run"
+            disabled={submitting}
+            onClick={() => recordBall({ bat_runs: 3, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+          >
+            3
+          </button>
+
+          <button
+            className="score-btn score-run"
+            disabled={submitting}
+            onClick={() => recordBall({ bat_runs: 2, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+          >
+            2
+          </button>
+          <button
+            className="score-btn score-run"
+            disabled={submitting}
+            onClick={() => recordBall({ bat_runs: 1, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+          >
+            1
+          </button>
+          <button
+            className="score-btn score-dot"
+            disabled={submitting}
+            onClick={() => recordBall({ bat_runs: 0, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+          >
+            •
+          </button>
+
+          <button
+            className="score-btn score-wicket span-3"
+            disabled={submitting}
+            onClick={() => {
+              setWDismissed(current_striker?.player_id || '');
+              loadBatters();
+              setShowWicketModal(true);
+            }}
+          >
+            🚨 WICKET OUT
+          </button>
+
+          <button
+            className="score-btn score-extra"
+            disabled={submitting}
+            onClick={() => setShowExtrasModal({ type: 'NB' })}
+          >
+            NO BALL
+          </button>
+          <button
+            className="score-btn score-extra"
+            disabled={submitting}
+            onClick={() => setShowExtrasModal({ type: 'WIDE' })}
+          >
+            WIDE
+          </button>
+          <button
+            className="score-btn score-extra"
+            disabled={submitting}
+            onClick={() => setShowExtrasModal({ type: 'BYE' })}
+          >
+            BYE / LB
+          </button>
+        </div>
       </div>
 
-      {/* Modals */}
+      {/* WICKET MODAL */}
       {showWicketModal && (
-        <div className="modal">
-          <div className="modal-content card">
-            <h3>Wicket</h3>
-            <form onSubmit={handleWicketSubmit}>
-              <select value={wType} onChange={e=>setWType(e.target.value)}>
-                <option value="bowled">Bowled</option>
-                <option value="caught">Caught</option>
-                <option value="lbw">LBW</option>
-                <option value="runout">Run Out</option>
-                <option value="stumped">Stumped</option>
-              </select>
-              <select value={wDismissed} onChange={e=>setWDismissed(e.target.value)}>
-                <option value="">Dismissed Batter</option>
-                {current_striker && <option value={current_striker.player_id}>{current_striker.name}</option>}
-                {current_non_striker && <option value={current_non_striker.player_id}>{current_non_striker.name}</option>}
-              </select>
-              <select value={wNewBatter} onChange={e=>setWNewBatter(e.target.value)}>
-                <option value="">New Batter</option>
-                {availableBatters.map(b => <option key={b.player_id} value={b.player_id}>{b.name}</option>)}
-              </select>
-              <div>
-                <label><input type="checkbox" checked={wNewBatterStriker} onChange={e=>setWNewBatterStriker(e.target.checked)} /> New batter on strike</label>
+        <div className="modal-overlay">
+          <div className="modal-content-card">
+            <h2>🚨 Record Wicket</h2>
+            <form onSubmit={handleWicketSubmit} className="stitch-form-stack mt-4">
+              <div className="input-group">
+                <label>Dismissal Type</label>
+                <select value={wType} onChange={e => setWType(e.target.value)}>
+                  <option value="bowled">Bowled</option>
+                  <option value="caught">Caught</option>
+                  <option value="lbw">LBW</option>
+                  <option value="runout">Run Out</option>
+                  <option value="stumped">Stumped</option>
+                </select>
               </div>
-              <div className="modal-actions">
-                <button type="button" onClick={() => setShowWicketModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-w">OUT</button>
+
+              <div className="input-group">
+                <label>Dismissed Batter</label>
+                <select value={wDismissed} onChange={e => setWDismissed(e.target.value)}>
+                  {current_striker && <option value={current_striker.player_id}>{current_striker.name} (Striker)</option>}
+                  {current_non_striker && <option value={current_non_striker.player_id}>{current_non_striker.name} (Non-Striker)</option>}
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label>New Batter Entering</label>
+                <select value={wNewBatter} onChange={e => setWNewBatter(e.target.value)}>
+                  <option value="">-- Select New Batter --</option>
+                  {availableBatters.map(b => (
+                    <option key={b.player_id} value={b.player_id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="checkbox-group-row">
+                <label className="custom-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={wNewBatterStriker}
+                    onChange={e => setWNewBatterStriker(e.target.checked)}
+                  />
+                  <span>New batter takes strike</span>
+                </label>
+              </div>
+
+              <div className="form-action-buttons mt-4">
+                <button type="submit" className="btn-stitch-primary width-100" style={{ background: '#dc2626' }}>
+                  Confirm Wicket
+                </button>
+                <button
+                  type="button"
+                  className="btn-stitch-secondary width-100 mt-2"
+                  onClick={() => setShowWicketModal(false)}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
+      {/* EXTRAS MODAL */}
       {showExtrasModal && (
-        <div className="modal">
-          <div className="modal-content card">
-            <h3>{showExtrasModal.type} Extras</h3>
-            <div className="extras-grid">
-              {[0,1,2,3,4,6].map(r => (
-                <button key={r} className="btn" onClick={() => {
-                  let xt = 'none';
-                  if (showExtrasModal.type === 'WIDE') xt = 'wide';
-                  if (showExtrasModal.type === 'NB') xt = 'noball';
-                  if (showExtrasModal.type === 'BY') xt = 'bye';
-                  if (showExtrasModal.type === 'LB') xt = 'legbye';
-                  recordBall({ bat_runs: 0, extra_runs: (xt==='wide'||xt==='noball'?1:0) + r, extra_type: xt, is_wicket: false });
-                  setShowExtrasModal(null);
-                }}>
+        <div className="modal-overlay">
+          <div className="modal-content-card text-center">
+            <h2>➕ {showExtrasModal.type} Extras</h2>
+            <p className="text-muted mb-4">Select runs scored on this extra delivery</p>
+            <div className="extras-choice-grid">
+              {[0, 1, 2, 3, 4, 6].map(r => (
+                <button
+                  key={r}
+                  className="btn-stitch-secondary"
+                  onClick={() => {
+                    let xt = 'none';
+                    if (showExtrasModal.type === 'WIDE') xt = 'wide';
+                    if (showExtrasModal.type === 'NB') xt = 'noball';
+                    if (showExtrasModal.type === 'BYE') xt = 'bye';
+                    if (showExtrasModal.type === 'LB') xt = 'legbye';
+                    recordBall({
+                      bat_runs: 0,
+                      extra_runs: (xt === 'wide' || xt === 'noball' ? 1 : 0) + r,
+                      extra_type: xt,
+                      is_wicket: false
+                    });
+                    setShowExtrasModal(null);
+                  }}
+                >
                   {showExtrasModal.type} + {r}
                 </button>
               ))}
             </div>
-            <button className="btn mt-4 full-width" onClick={() => setShowExtrasModal(null)}>Cancel</button>
+            <button
+              className="btn-stitch-secondary width-100 mt-4"
+              onClick={() => setShowExtrasModal(null)}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
+      {/* BOWLER SELECTION MODAL (OVER COMPLETE) */}
       {showBowlerModal && (
-        <div className="modal">
-          <div className="modal-content card">
-            <h3>Select New Bowler</h3>
-            <div className="bowlers-list">
+        <div className="modal-overlay">
+          <div className="modal-content-card text-center">
+            <h2>🎳 Over Completed!</h2>
+            <p className="text-muted mb-4">Select the bowler for the next over</p>
+            <div className="bowlers-choice-stack">
               {availableBowlers.map(b => (
-                <button key={b.player_id} className="btn" disabled={!b.can_bowl} onClick={() => {
-                  setPendingBowlerId(b.player_id);
-                  setShowBowlerModal(false);
-                }}>
-                  {b.name} ({b.overs_bowled} ov) {b.can_bowl ? '' : '- Max Overs'}
+                <button
+                  key={b.player_id}
+                  className={`btn-stitch-secondary width-100 ${!b.can_bowl ? 'disabled' : ''}`}
+                  disabled={!b.can_bowl}
+                  onClick={() => {
+                    setShowBowlerModal(false);
+                  }}
+                >
+                  {b.name} ({b.overs_bowled} ov bowled) {b.can_bowl ? '' : '- Max Overs Limit'}
                 </button>
               ))}
             </div>

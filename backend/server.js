@@ -8,27 +8,14 @@ const { initSchema } = require('./db/schema');
 const app = express();
 const server = http.createServer(app);
 
-// CORS configuration
-const allowedOrigins = (process.env.FRONTEND_URLS || 'http://localhost:5173,http://localhost:5174')
-  .split(',')
-  .map(s => s.trim());
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.warn(`CORS blocked: ${origin}`);
-      callback(null, true); // Be permissive for now; tighten in production
-    }
-  },
+// CORS configuration - allow all origins dynamically
+app.use(cors({
+  origin: true, // Reflects the request origin, fully supporting credentials and all domains
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+}));
+app.options('*', cors());
 app.use(express.json());
 
 // Socket.io

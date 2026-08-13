@@ -22,19 +22,23 @@ export const Layout: React.FC = () => {
                   to="/"
                   className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
                 >
-                  📊 Dashboard
+                  Dashboard
                 </Link>
                 <Link
                   to="/setup"
                   className={`nav-link ${location.pathname === '/setup' ? 'active' : ''}`}
                 >
-                  ⚙️ Teams & Squads
+                  Teams & Squads
                 </Link>
               </nav>
+              
               <div className="user-section">
-                <span className="user-email">{(user as any)?.email || (user as any)?.username || 'Scorer'}</span>
+                <div className="user-badge">
+                  <span>Scorer</span>
+                  <span>👤</span>
+                </div>
                 <button onClick={logout} className="btn-logout">
-                  🚪 Logout
+                  Sign Out
                 </button>
               </div>
             </div>

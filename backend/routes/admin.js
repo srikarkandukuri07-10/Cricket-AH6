@@ -813,4 +813,32 @@ router.post('/innings/:inningsId/change-bowler', async (req, res) => {
   }
 });
 
+// DELETE /api/admin/matches/:matchId (Danger Zone: Delete Ongoing/Completed Match)
+router.delete('/matches/:matchId', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const matchRes = await db.query('SELECT * FROM matches WHERE id = $1', [matchId]);
+    if (matchRes.rows.length === 0) return res.status(404).json({ error: 'Match not found' });
+
+    // Clean up all related records
+    await db.query('DELETE FROM ball_events WHERE match_id = $1', [matchId]);
+    await db.query('DELETE FROM innings WHERE match_id = $1', [matchId]);
+    await db.query('DELETE FROM match_squads WHERE match_id = $1', [matchId]).catch(() => {});
+    await db.query('DELETE FROM matches WHERE id = $1', [matchId]);
+
+    // Emit real-time socket notification
+    if (req.app.get('io')) {
+      req.app.get('io').to(`match:${matchId}`).emit('match_status_change', {
+        matchId,
+        status: 'deleted',
+      });
+    }
+
+    res.json({ success: true, message: 'Match deleted successfully' });
+  } catch (err) {
+    console.error('Delete match error:', err);
+    res.status(500).json({ error: 'Failed to delete match' });
+  }
+});
+
 module.exports = router;

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Match } from '../types';
+import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -22,6 +23,20 @@ const Dashboard: React.FC = () => {
       console.error('Failed to fetch matches', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteMatch = async (e: React.MouseEvent, matchId: string, matchName: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`⚠️ DANGER ZONE: Are you sure you want to PERMANENTLY DELETE match "${matchName}"? All score data will be erased!`)) {
+      return;
+    }
+    try {
+      await api.delete(`/api/admin/matches/${matchId}`);
+      toast.success(`Match "${matchName}" deleted`);
+      fetchMatches();
+    } catch (e) {
+      toast.error('Failed to delete match');
     }
   };
 
@@ -133,12 +148,21 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="match-card-actions">
+                <div className="match-card-actions flex-between" style={{ gap: '8px' }}>
                   <button
                     className="btn-stitch-primary width-100"
+                    style={{ flex: 1 }}
                     onClick={() => navigate(routeForMatch(match))}
                   >
                     {isLive ? '🏏 Continue Scoring' : match.status === 'completed' ? '📊 View Result' : '⚙️ Match Setup'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-table-action delete"
+                    title="Delete match (Danger Zone)"
+                    onClick={(e) => handleDeleteMatch(e, match.id, match.name || 'Match')}
+                  >
+                    🗑️
                   </button>
                 </div>
               </div>

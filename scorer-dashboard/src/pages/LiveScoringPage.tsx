@@ -95,6 +95,22 @@ const LiveScoringPage: React.FC = () => {
     }
   };
 
+  const handleDeleteMatch = async () => {
+    if (!window.confirm('⚠️ DANGER ZONE: Are you sure you want to PERMANENTLY DELETE this ongoing match? All scored balls, wickets, and stats will be permanently erased!')) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.delete(`/api/admin/matches/${matchId}`);
+      toast.success('Match deleted permanently');
+      navigate('/');
+    } catch (err: any) {
+      toast.error('Failed to delete match');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleWicketSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await recordBall({
@@ -324,6 +340,22 @@ const LiveScoringPage: React.FC = () => {
             BYE / LB
           </button>
         </div>
+      </div>
+
+      {/* DANGER ZONE CARD */}
+      <div className="stitch-card danger-zone-box mt-6 p-6">
+        <div className="danger-zone-header mb-3">
+          <h3 className="danger-zone-title">⚠️ Danger Zone</h3>
+          <p className="danger-zone-desc">Permanently cancel & delete this match and all scoring history</p>
+        </div>
+        <button
+          type="button"
+          className="btn-stitch-danger width-100"
+          onClick={handleDeleteMatch}
+          disabled={submitting}
+        >
+          🗑️ Delete Ongoing Match
+        </button>
       </div>
 
       {/* WICKET MODAL */}

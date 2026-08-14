@@ -138,9 +138,9 @@ const Dashboard: React.FC = () => {
             return (
               <div key={match.id} className={`stitch-card match-card-box ${isLive ? 'border-live' : ''}`}>
                 <div className="match-card-top flex-between">
-                  <span className={`status-badge-pill ${match.status}`}>
+                  <span className={`status-badge-pill ${match.status}`} style={match.status === 'completed' ? { background: '#fef3c7', color: '#b45309', border: '1px solid #fde047' } : {}}>
                     {isLive && <span className="live-dot-pulse"></span>}
-                    {match.status.replace('_', ' ').toUpperCase()}
+                    {match.status === 'completed' ? '🏆 COMPLETED' : match.status.replace('_', ' ').toUpperCase()}
                   </span>
                   <span className="format-tag">{match.name || 'AH6 T10 Match'}</span>
                 </div>
@@ -162,6 +162,12 @@ const Dashboard: React.FC = () => {
                     <span className="team-fullname">{match.team_b?.name || 'Team B'}</span>
                   </div>
                 </div>
+
+                {match.status === 'completed' && match.result_text && (
+                  <div className="my-3 p-2 text-center" style={{ background: '#fef3c7', color: '#92400e', borderRadius: '10px', fontWeight: 800, fontSize: '0.88rem', border: '1px solid #fde047' }}>
+                    🏆 {match.result_text}
+                  </div>
+                )}
 
                 <div className="match-card-actions flex-between" style={{ gap: '8px' }}>
                   <button

@@ -102,4 +102,6 @@ export interface Match {
   status: string;
   team_a: Team;
   team_b: Team;
+  result_text?: string | null;
+  toss_summary?: string | null;
 }

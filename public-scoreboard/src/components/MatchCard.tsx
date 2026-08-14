@@ -11,7 +11,7 @@ export default function MatchCard({ match }: { match: MatchSummary }) {
       <div className="mc-header">
         <span className="mc-tournament">{match.tournament_name}</span>
         {isLive && <span className="mc-status-live"><span className="pulse-small"></span>LIVE</span>}
-        {isCompleted && <span className="mc-status-completed">COMPLETED</span>}
+        {isCompleted && <span className="mc-status-completed" style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde047', padding: '3px 10px', borderRadius: '9999px', fontWeight: 800 }}>🏆 COMPLETED</span>}
         {!isLive && !isCompleted && <span className="mc-status-upcoming">UPCOMING</span>}
       </div>
 
@@ -43,9 +43,9 @@ export default function MatchCard({ match }: { match: MatchSummary }) {
         </div>
       </div>
 
-      <div className="mc-footer text-muted">
+      <div className="mc-footer text-muted" style={match.result_text ? { color: '#b45309', fontWeight: 800 } : {}}>
         {match.result_text ? (
-          <span className="mc-result">{match.result_text}</span>
+          <span className="mc-result">🏆 {match.result_text}</span>
         ) : match.toss_summary ? (
           <span>{match.toss_summary}</span>
         ) : (

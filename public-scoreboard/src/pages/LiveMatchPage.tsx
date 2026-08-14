@@ -11,6 +11,7 @@ import BowlingTable from '../components/BowlingTable';
 import SquadsView from '../components/SquadsView';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorState from '../components/ErrorState';
+import { Fireworks } from '../components/Fireworks';
 
 export default function LiveMatchPage() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -23,9 +24,12 @@ export default function LiveMatchPage() {
   if (!matchState) return <ErrorState message="Match not found" />;
 
   const isLive = ['innings1_live', 'innings2_live'].includes(matchState.status);
+  const isCompleted = ['completed', 'abandoned'].includes(matchState.status);
 
   return (
     <div className="page-container match-page">
+      {isCompleted && <Fireworks />}
+
       <div className="nav-header">
         <button className="back-btn" onClick={() => navigate('/')}>← Matches</button>
         <div className="connection-status">
@@ -36,6 +40,16 @@ export default function LiveMatchPage() {
           )}
         </div>
       </div>
+
+      {isCompleted && (
+        <div className="card text-center p-6 my-3" style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fde047 100%)', color: '#78350f', border: '2px solid #f59e0b', borderRadius: '18px' }}>
+          <div style={{ fontSize: '3rem' }}>🏆</div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>MATCH COMPLETED!</h2>
+          <p className="mt-2" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#92400e' }}>
+            {matchState.result_text || 'Official match result finalized'}
+          </p>
+        </div>
+      )}
 
       {matchState.is_free_hit && (
         <div className="free-hit-banner">🔥 FREE HIT!</div>

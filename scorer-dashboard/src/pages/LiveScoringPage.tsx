@@ -4,6 +4,7 @@ import api from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useMatchState } from '../hooks/useMatchState';
 import { useAuth } from '../contexts/AuthContext';
+import { Fireworks } from '../components/Fireworks';
 import toast from 'react-hot-toast';
 
 const LiveScoringPage: React.FC = () => {
@@ -165,6 +166,19 @@ const LiveScoringPage: React.FC = () => {
           </button>
         )}
       </div>
+
+      {matchState.status === 'completed' && <Fireworks />}
+
+      {/* Match Completed Celebration Banner */}
+      {matchState.status === 'completed' && (
+        <div className="stitch-card p-6 text-center mb-6" style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fde047 100%)', color: '#78350f', border: '2px solid #f59e0b', borderRadius: '20px', boxShadow: '0 10px 30px rgba(245, 158, 11, 0.25)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '8px' }}>🏆</div>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 800 }}>MATCH COMPLETED!</h2>
+          <p style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: '8px', color: '#92400e' }}>
+            {matchState.result_text || 'Official match result finalized'}
+          </p>
+        </div>
+      )}
 
       {/* 1st Innings Completed Banner */}
       {(matchState.status === 'innings_break' || (current_innings?.is_complete && current_innings?.innings_number === 1)) && (

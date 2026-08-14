@@ -18,15 +18,33 @@ const MatchResultPage: React.FC = () => {
   };
 
   return (
-    <div className="container max-w-md">
-      <h2>Match Result</h2>
-      <form onSubmit={handleSubmit} className="card form-col">
-        <div className="form-group">
-          <label>Result Summary</label>
-          <input type="text" value={resultText} onChange={e=>setResultText(e.target.value)} required placeholder="Team A won by 10 runs" />
+    <div className="setup-container max-width-600">
+      <div className="page-header-row">
+        <div>
+          <h1 className="page-title">🏆 Match Result</h1>
+          <p className="page-description">Finalize match and publish official result summary</p>
         </div>
-        <button type="submit" className="btn btn-primary">End Match</button>
-      </form>
+      </div>
+
+      <div className="stitch-card border-glow p-6">
+        <form onSubmit={handleSubmit} className="stitch-form-stack">
+          <div className="input-group">
+            <label>Official Match Result Summary *</label>
+            <input
+              type="text"
+              value={resultText}
+              onChange={e => setResultText(e.target.value)}
+              required
+              placeholder="e.g. Team A won by 15 runs / Team B won by 4 wickets"
+            />
+          </div>
+          <div className="form-action-buttons mt-6">
+            <button type="submit" className="btn-stitch-primary width-100" style={{ padding: '14px 24px', fontSize: '1rem' }}>
+              🏁 Conclude Match & Save Result
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

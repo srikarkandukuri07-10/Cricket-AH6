@@ -26,20 +26,44 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2>AH6 Scorer Login</h2>
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
-            <label>Username</label>
-            <input type="text" value={username} onChange={e => setUsername(e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label>Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-          </div>
-          <button type="submit" className="btn btn-primary full-width">Login</button>
-        </form>
+    <div className="setup-container max-width-600">
+      <div className="login-wrapper">
+        <div className="login-header text-center mb-6">
+          <div className="login-logo-badge mb-3">🏏</div>
+          <h1 className="page-title">AH6 Scorer Login</h1>
+          <p className="page-description">Sign in to access live cricket scoring and match control panel</p>
+        </div>
+
+        <div className="stitch-card border-glow p-6">
+          <form onSubmit={handleLogin} className="stitch-form-stack">
+            <div className="input-group">
+              <label>Username / Email</label>
+              <input
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Enter scorer username"
+                required
+                autoCapitalize="none"
+              />
+            </div>
+            <div className="input-group">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+              />
+            </div>
+            <div className="form-action-buttons mt-6">
+              <button type="submit" className="btn-stitch-primary width-100" style={{ padding: '14px 24px', fontSize: '1rem' }}>
+                🔑 Sign In to Dashboard
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

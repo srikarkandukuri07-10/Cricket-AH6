@@ -33,6 +33,12 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -40,6 +46,7 @@ body {
   background-color: var(--bg-main);
   color: var(--text-dark);
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -56,26 +63,28 @@ body {
 .navbar-container {
   max-width: 1150px;
   margin: 0 auto;
-  padding: 14px 24px;
+  padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   text-decoration: none;
   color: var(--text-dark);
 }
 
-.cricket-icon { font-size: 1.5rem; }
+.cricket-icon { font-size: 1.4rem; }
 
 .brand-title {
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   color: var(--text-dark);
   letter-spacing: -0.5px;
 }
@@ -85,28 +94,33 @@ body {
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: var(--bg-main);
   padding: 4px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
 }
 
 .nav-link {
   color: var(--text-muted);
   text-decoration: none;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 8px 18px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 7px 14px;
   border-radius: var(--radius-pill);
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .nav-link.active {
@@ -118,21 +132,21 @@ body {
 .user-section {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border-left: 1px solid var(--border-subtle);
-  padding-left: 16px;
+  padding-left: 12px;
 }
 
 .user-badge {
   background: var(--badge-green-bg);
   color: var(--badge-green-text);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .btn-logout {
@@ -141,18 +155,20 @@ body {
   color: var(--text-body);
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
-  font-size: 0.85rem;
-  padding: 7px 16px;
+  font-size: 0.8rem;
+  padding: 6px 14px;
   border-radius: var(--radius-btn);
   cursor: pointer;
   transition: all 0.2s;
+  touch-action: manipulation;
 }
 
 /* LAYOUT CONTAINER */
 .setup-container {
+  width: 100%;
   max-width: 1150px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 24px 20px;
 }
 
 .max-width-600 { max-width: 620px !important; }
@@ -161,24 +177,200 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .page-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 800;
   color: var(--text-dark);
+  line-height: 1.2;
 }
 
-.page-description { color: var(--text-muted); font-size: 0.95rem; margin-top: 4px; }
+.page-description { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+
+/* FILTER TAB BAR */
+.filter-tab-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px;
+}
+
+.filter-tab-bar::-webkit-scrollbar { display: none; }
+
+.filter-tab {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.filter-tab:hover { color: var(--text-dark); }
+
+.filter-tab.active {
+  background: var(--accent-indigo-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* MATCHES GRID & CARDS */
+.matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.match-card-box {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.match-card-box:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.match-card-box.border-live {
+  border-color: #fca5a5;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.12);
+}
+
+.match-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  background: #f1f5f9;
+  color: var(--text-muted);
+}
+
+.status-badge-pill.innings1_live,
+.status-badge-pill.innings2_live {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.live-dot-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #dc2626;
+  animation: pulse 1.5s infinite;
+}
+
+.format-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.teams-clash-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  background: #f8fafc;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+}
+
+.team-col {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.team-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.team-fullname {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vs-badge {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--primary-indigo);
+  background: #e0e7ff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.empty-matches-box {
+  padding: 40px 20px;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
 
 /* CARDS */
 .stitch-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
-  padding: 24px;
+  padding: 20px;
   box-shadow: var(--shadow-soft);
   margin-bottom: 20px;
 }
@@ -203,18 +395,18 @@ body {
 .hero-stat-card {
   background: var(--accent-purple-gradient);
   border-radius: var(--radius-card);
-  padding: 24px 28px;
+  padding: 20px 24px;
   color: #ffffff;
   box-shadow: 0 10px 25px rgba(55, 40, 156, 0.3);
 }
 
 .hero-stat-header { font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; opacity: 0.85; }
 
-.score-digits-row { display: flex; align-items: baseline; gap: 14px; }
+.score-digits-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 
 .main-score-digits {
   font-family: 'Rajdhani', sans-serif;
-  font-size: 3.4rem;
+  font-size: 3.2rem;
   font-weight: 800;
   line-height: 1;
   color: #ffffff;
@@ -222,7 +414,7 @@ body {
 
 .overs-text {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: #fde047;
   font-weight: 700;
 }
@@ -233,7 +425,11 @@ body {
   gap: 8px;
   overflow-x: auto;
   padding: 6px 0;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+
+.recent-balls-container::-webkit-scrollbar { display: none; }
 
 .ball-chip {
   width: 38px;
@@ -267,19 +463,133 @@ body {
   box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3);
 }
 
+/* FORMS & INPUT CONTROLS */
+.stitch-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stitch-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-group label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-body);
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea {
+  width: 100%;
+  height: 48px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-subtle);
+  background: #ffffff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px; /* Prevents mobile iOS input zoom */
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  touch-action: manipulation;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+  border-color: var(--primary-indigo);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.checkbox-group-row {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.custom-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.custom-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary-indigo);
+  cursor: pointer;
+}
+
+.form-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* TOSS CHOICE PAGE */
+.toss-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.toss-choice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px 14px;
+  background: #ffffff;
+  border: 2px solid var(--border-subtle);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  touch-action: manipulation;
+}
+
+.toss-choice-card:hover {
+  border-color: #cbd5e1;
+}
+
+.toss-choice-card.active {
+  border-color: var(--primary-indigo);
+  background: #f5f3ff;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+}
+
+.choice-icon { font-size: 1.8rem; }
+.choice-name { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; color: var(--text-dark); }
+
 /* SCORING PAD GRID */
 .scoring-pad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: 12px;
 }
 
 .score-btn {
-  height: 60px;
+  height: 56px;
   border-radius: 14px;
   border: 1px solid var(--border-subtle);
   font-family: 'Rajdhani', sans-serif;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -287,6 +597,7 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  touch-action: manipulation;
 }
 
 .score-btn:hover:not(:disabled) {
@@ -304,7 +615,7 @@ body {
 .score-wicket {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: #ffffff;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-family: 'Outfit', sans-serif;
   border: none;
   box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
@@ -314,7 +625,7 @@ body {
   background: #f3e8ff;
   color: #7e22ce;
   border-color: #d8b4fe;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-family: 'Outfit', sans-serif;
 }
 
@@ -324,25 +635,27 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 200;
-  padding: 20px;
+  padding: 16px;
 }
 
 .modal-content-card {
   background: #ffffff;
   border-radius: var(--radius-card);
-  padding: 28px;
+  padding: 24px 20px;
   width: 100%;
   max-width: 480px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
 }
 
-.extras-choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.extras-choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .bowlers-choice-stack { display: flex; flex-direction: column; gap: 10px; }
 
 /* BUTTONS */
@@ -353,6 +666,7 @@ body {
   font-weight: 700;
   font-size: 0.95rem;
   padding: 12px 24px;
+  min-height: 44px;
   border-radius: var(--radius-btn);
   border: none;
   cursor: pointer;
@@ -362,6 +676,7 @@ body {
   gap: 8px;
   text-decoration: none;
   transition: all 0.2s;
+  touch-action: manipulation;
 }
 
 .btn-stitch-primary:hover { background: var(--primary-btn-hover); transform: translateY(-2px); }
@@ -373,27 +688,147 @@ body {
   font-weight: 600;
   font-size: 0.9rem;
   padding: 10px 20px;
+  min-height: 44px;
   border-radius: var(--radius-btn);
   border: 1px solid var(--border-subtle);
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
 }
 
 .btn-stitch-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
-.btn-compact { padding: 6px 14px; font-size: 0.8rem; }
+.btn-compact { padding: 6px 14px; min-height: 36px; font-size: 0.8rem; }
 .width-100 { width: 100%; }
 
+/* LOGIN SPECIFIC */
+.login-wrapper {
+  margin-top: 20px;
+}
+
+.login-logo-badge {
+  font-size: 3rem;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* UTILS */
-.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .text-center { text-align: center; }
 .mt-2 { margin-top: 0.5rem; }
 .mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-3 { margin-bottom: 0.75rem; }
 .mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
 .my-3 { margin-top: 0.75rem; margin-bottom: 0.75rem; }
+.my-4 { margin-top: 1rem; margin-bottom: 1rem; }
 .p-4 { padding: 1rem; }
 .p-6 { padding: 1.5rem; }
 .pt-3 { padding-top: 0.75rem; }
 .border-top-subtle { border-top: 1px solid rgba(255, 255, 255, 0.15); }
+
+/* MOBILE RESPONSIVE QUERIES (< 640px) */
+@media (max-width: 640px) {
+  .setup-container {
+    padding: 16px 12px;
+  }
+
+  .navbar-container {
+    padding: 10px 14px;
+  }
+
+  .navbar-right {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+
+  .nav-menu {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .user-section {
+    border-left: none;
+    padding-left: 0;
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+
+  .page-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+  }
+
+  .matches-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .teams-clash-row {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .team-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+
+  .team-fullname {
+    font-size: 0.88rem;
+  }
+
+  .stitch-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main-score-digits {
+    font-size: 2.4rem;
+  }
+
+  .scoring-pad-grid {
+    gap: 8px;
+  }
+
+  .score-btn {
+    height: 50px;
+    font-size: 1.35rem;
+  }
+
+  .score-wicket {
+    font-size: 0.9rem;
+  }
+
+  .extras-choice-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  .toss-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .main-score-digits {
+    font-size: 2rem;
+  }
+}

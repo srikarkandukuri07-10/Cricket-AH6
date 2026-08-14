@@ -295,31 +295,39 @@ router.post('/matches/:matchId/start-innings', async (req, res) => {
       'SELECT * FROM innings WHERE match_id = $1 ORDER BY innings_number', [req.params.matchId]
     );
 
-    let inningsNumber, battingTeamId, bowlingTeamId, target;
+    let innings;
+    let inningsNumber;
 
     if (existingInnings.rows.length === 0) {
       // Starting innings 1
       inningsNumber = 1;
-      battingTeamId = match.batting_first_team_id;
-      bowlingTeamId = match.bowling_first_team_id;
-      target = null;
-    } else if (existingInnings.rows.length === 1) {
+      const battingTeamId = match.batting_first_team_id;
+      const bowlingTeamId = match.bowling_first_team_id;
+      const inningsResult = await db.query(
+        `INSERT INTO innings (match_id, innings_number, batting_team_id, bowling_team_id, target)
+         VALUES ($1, 1, $2, $3, NULL) RETURNING *`,
+        [req.params.matchId, battingTeamId, bowlingTeamId]
+      );
+      innings = inningsResult.rows[0];
+    } else {
       // Starting innings 2
       inningsNumber = 2;
-      battingTeamId = match.bowling_first_team_id; // team that bowled first now bats
-      bowlingTeamId = match.batting_first_team_id;
-      target = existingInnings.rows[0].total_runs + 1; // target = first innings score + 1
-    } else {
-      return res.status(400).json({ error: 'Both innings already created' });
+      const inn2 = existingInnings.rows.find(i => i.innings_number === 2);
+      if (inn2) {
+        innings = inn2;
+      } else {
+        const inn1 = existingInnings.rows.find(i => i.innings_number === 1);
+        const battingTeamId = match.bowling_first_team_id;
+        const bowlingTeamId = match.batting_first_team_id;
+        const target = (inn1 ? inn1.total_runs : 0) + 1;
+        const inningsResult = await db.query(
+          `INSERT INTO innings (match_id, innings_number, batting_team_id, bowling_team_id, target)
+           VALUES ($1, 2, $2, $3, $4) RETURNING *`,
+          [req.params.matchId, battingTeamId, bowlingTeamId, target]
+        );
+        innings = inningsResult.rows[0];
+      }
     }
-
-    // Create innings
-    const inningsResult = await db.query(
-      `INSERT INTO innings (match_id, innings_number, batting_team_id, bowling_team_id, target)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [req.params.matchId, inningsNumber, battingTeamId, bowlingTeamId, target]
-    );
-    const innings = inningsResult.rows[0];
 
     // Update match status
     const newStatus = inningsNumber === 1 ? 'innings1_live' : 'innings2_live';
@@ -592,6 +600,22 @@ router.post('/innings/:inningsId/balls', async (req, res) => {
       if (innings.innings_number === 1) {
         // End of first innings — go to break
         await db.query('UPDATE matches SET status = $1 WHERE id = $2', ['innings_break', innings.match_id]);
+
+        // Auto-create innings 2 record with calculated target so target tracking works immediately
+        const targetRuns = updatedInnings.total_runs + 1;
+        const inn2Check = await db.query('SELECT * FROM innings WHERE match_id = $1 AND innings_number = 2', [innings.match_id]);
+        if (inn2Check.rows.length === 0) {
+          const matchInfo = (await db.query('SELECT * FROM matches WHERE id = $1', [innings.match_id])).rows[0];
+          const battingTeamId = matchInfo.bowling_first_team_id;
+          const bowlingTeamId = matchInfo.batting_first_team_id;
+          await db.query(
+            `INSERT INTO innings (match_id, innings_number, batting_team_id, bowling_team_id, target)
+             VALUES ($1, 2, $2, $3, $4)`,
+            [innings.match_id, battingTeamId, bowlingTeamId, targetRuns]
+          );
+        } else {
+          await db.query('UPDATE innings SET target = $1 WHERE id = $2', [targetRuns, inn2Check.rows[0].id]);
+        }
       } else {
         // End of second innings — match complete
         const inn1Res = await db.query(

@@ -312,9 +312,9 @@ const SetupPage: React.FC = () => {
                 <span className="team-badge-circle" style={{ backgroundColor: t.primary_color || '#6366f1' }}>
                   {t.short_name}
                 </span>
-                <div className="team-text-wrap" style={{ flex: 1 }}>
+                <div className="team-text-wrap">
                   <span className="team-name-str">{t.name}</span>
-                  <span className="team-code-str">{t.short_name}</span>
+                  <span className="team-code-str">Code: {t.short_name}</span>
                 </div>
                 <button
                   type="button"

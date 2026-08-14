@@ -32,6 +32,12 @@ const SetupPage: React.FC = () => {
   const [newTeamShort, setNewTeamShort] = useState('');
   const [newTeamColor, setNewTeamColor] = useState('#ff5722');
 
+  // Edit Team Modal state
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [editTeamName, setEditTeamName] = useState('');
+  const [editTeamShort, setEditTeamShort] = useState('');
+  const [editTeamColor, setEditTeamColor] = useState('#6366f1');
+
   // Player Form state
   const [playerName, setPlayerName] = useState('');
   const [jerseyNum, setJerseyNum] = useState<string>('');
@@ -183,6 +189,40 @@ const SetupPage: React.FC = () => {
     }
   };
 
+  const handleStartEditTeam = (e: React.MouseEvent, team: Team) => {
+    e.stopPropagation();
+    setEditingTeam(team);
+    setEditTeamName(team.name);
+    setEditTeamShort(team.short_name);
+    setEditTeamColor(team.primary_color || '#6366f1');
+  };
+
+  const handleUpdateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTeam) return;
+    if (!editTeamName.trim() || !editTeamShort.trim()) {
+      return toast.error('Team name and short code are required');
+    }
+    try {
+      const { data: updated } = await api.put(`/api/admin/teams/${editingTeam.id}`, {
+        name: editTeamName.trim(),
+        short_name: editTeamShort.trim().toUpperCase(),
+        primary_color: editTeamColor,
+      });
+      toast.success(`Updated team "${updated.name}"!`);
+      setEditingTeam(null);
+
+      // Refresh teams list
+      const { data: updatedTeams } = await api.get('/api/teams');
+      setTeams(updatedTeams);
+      if (selectedTeamId === editingTeam.id) {
+        setSelectedTeam(prev => prev ? { ...prev, name: updated.name, short_name: updated.short_name, primary_color: updated.primary_color } : null);
+      }
+    } catch (e) {
+      toast.error('Failed to update team');
+    }
+  };
+
   const handleDeleteTeam = async (e: React.MouseEvent, teamId: string, teamName: string) => {
     e.stopPropagation();
     if (!window.confirm(`Are you sure you want to delete team "${teamName}" and all its players?`)) return;
@@ -316,14 +356,24 @@ const SetupPage: React.FC = () => {
                   <span className="team-name-str">{t.name}</span>
                   <span className="team-code-str">Code: {t.short_name}</span>
                 </div>
-                <button
-                  type="button"
-                  className="btn-table-action delete"
-                  title={`Delete team ${t.name}`}
-                  onClick={(e) => handleDeleteTeam(e, t.id, t.name)}
-                >
-                  🗑️
-                </button>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button
+                    type="button"
+                    className="btn-table-action edit"
+                    title={`Edit team ${t.name}`}
+                    onClick={(e) => handleStartEditTeam(e, t)}
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-table-action delete"
+                    title={`Delete team ${t.name}`}
+                    onClick={(e) => handleDeleteTeam(e, t.id, t.name)}
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -465,6 +515,73 @@ const SetupPage: React.FC = () => {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* EDIT TEAM MODAL */}
+      {editingTeam && (
+        <div className="modal-overlay">
+          <div className="modal-content-card">
+            <div className="flex-between mb-4">
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>✏️ Edit Team Details</h2>
+              <button
+                type="button"
+                className="btn-stitch-secondary btn-compact"
+                onClick={() => setEditingTeam(null)}
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateTeam} className="stitch-form-stack">
+              <div className="input-group">
+                <label>Team Name *</label>
+                <input
+                  type="text"
+                  value={editTeamName}
+                  onChange={e => setEditTeamName(e.target.value)}
+                  placeholder="e.g. Akshita Warriors"
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Short Code (3-5 Chars) *</label>
+                <input
+                  type="text"
+                  value={editTeamShort}
+                  onChange={e => setEditTeamShort(e.target.value)}
+                  maxLength={5}
+                  placeholder="e.g. AKW"
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Team Theme Color</label>
+                <div className="color-picker-box">
+                  <input
+                    type="color"
+                    value={editTeamColor}
+                    onChange={e => setEditTeamColor(e.target.value)}
+                  />
+                  <span>{editTeamColor}</span>
+                </div>
+              </div>
+
+              <div className="form-action-buttons mt-4">
+                <button type="submit" className="btn-stitch-primary width-100">
+                  💾 Save Team Changes
+                </button>
+                <button
+                  type="button"
+                  className="btn-stitch-secondary width-100 mt-2"
+                  onClick={() => setEditingTeam(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

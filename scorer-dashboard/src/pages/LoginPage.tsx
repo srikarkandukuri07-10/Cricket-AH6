@@ -6,64 +6,63 @@ import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const LoginPage: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanName = name.trim();
+    if (!cleanName) return toast.error('Please enter your name');
+
+    setSubmitting(true);
     try {
-      const { data } = await api.post('/api/auth/login', { email: username, username, password });
+      const { data } = await api.post('/api/auth/session', { name: cleanName });
       setToken(data.token);
-      login(data.token, data.user);
-      toast.success('Logged in successfully');
+      login(data.token, { name: data.name, is_scorer: data.is_scorer });
+      localStorage.setItem('chat_display_name', data.name);
       navigate('/');
     } catch (err: any) {
-      const msg = err.response?.data?.error || 'Login failed. Check credentials.';
+      const msg = err.response?.data?.error || 'Failed to start session. Try again.';
       toast.error(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="setup-container max-width-600">
-      <div className="login-wrapper">
-        <div className="login-header text-center mb-6">
-          <div className="login-logo-badge mb-3">🏏</div>
-          <h1 className="page-title">AH6 Scorer Login</h1>
-          <p className="page-description">Sign in to access live cricket scoring and match control panel</p>
+    <div className="setup-container max-width-600" style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="start-screen-card stitch-card border-glow p-8 width-100">
+        <div className="text-center mb-6">
+          <div className="start-logo-badge mb-3">🏏</div>
+          <h1 className="page-title" style={{ fontSize: '1.8rem' }}>Welcome to AH6 Cricket</h1>
         </div>
 
-        <div className="stitch-card border-glow p-6">
-          <form onSubmit={handleLogin} className="stitch-form-stack">
-            <div className="input-group">
-              <label>Username / Email</label>
-              <input
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="Enter scorer username"
-                required
-                autoCapitalize="none"
-              />
-            </div>
-            <div className="input-group">
-              <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter password"
-                required
-              />
-            </div>
-            <div className="form-action-buttons mt-6">
-              <button type="submit" className="btn-stitch-primary width-100" style={{ padding: '14px 24px', fontSize: '1rem' }}>
-                🔑 Sign In to Dashboard
-              </button>
-            </div>
-          </form>
-        </div>
+        <form onSubmit={handleContinue} className="stitch-form-stack">
+          <div className="input-group">
+            <label style={{ fontSize: '1rem', fontWeight: 800 }}>Enter Your Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Rahul / Tulasi"
+              required
+              autoFocus
+              style={{ fontSize: '1.1rem', height: '52px' }}
+            />
+          </div>
+          <div className="form-action-buttons mt-4">
+            <button
+              type="submit"
+              className="btn-stitch-primary width-100"
+              disabled={submitting || !name.trim()}
+              style={{ padding: '14px 24px', fontSize: '1.1rem', height: '52px' }}
+            >
+              Continue →
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

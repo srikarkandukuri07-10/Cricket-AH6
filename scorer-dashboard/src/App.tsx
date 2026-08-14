@@ -24,14 +24,13 @@ const App: React.FC = () => {
         
         <Route element={<Layout />}>
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/setup" element={<ProtectedRoute><SetupPage /></ProtectedRoute>} />
-          <Route path="/matches/new" element={<ProtectedRoute><CreateMatchPage /></ProtectedRoute>} />
-          <Route path="/matches/:matchId/squads" element={<ProtectedRoute><SquadSelectionPage /></ProtectedRoute>} />
-          <Route path="/matches/:matchId/toss" element={<ProtectedRoute><TossPage /></ProtectedRoute>} />
-          <Route path="/matches/:matchId/innings-setup" element={<ProtectedRoute><InningsSetupPage /></ProtectedRoute>} />
+          <Route path="/setup" element={<ProtectedRoute requireScorer><SetupPage /></ProtectedRoute>} />
+          <Route path="/matches/new" element={<ProtectedRoute requireScorer><CreateMatchPage /></ProtectedRoute>} />
+          <Route path="/matches/:matchId/squads" element={<ProtectedRoute requireScorer><SquadSelectionPage /></ProtectedRoute>} />
+          <Route path="/matches/:matchId/toss" element={<ProtectedRoute requireScorer><TossPage /></ProtectedRoute>} />
+          <Route path="/matches/:matchId/innings-setup" element={<ProtectedRoute requireScorer><InningsSetupPage /></ProtectedRoute>} />
           <Route path="/matches/:matchId/score" element={<ProtectedRoute><LiveScoringPage /></ProtectedRoute>} />
           <Route path="/matches/:matchId/result" element={<ProtectedRoute><MatchResultPage /></ProtectedRoute>} />
-          {/* Add a catch-all router for matches to redirect based on state */}
         </Route>
       </Routes>
     </BrowserRouter>

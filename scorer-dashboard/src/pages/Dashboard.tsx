@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Match } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
+  const { user } = useAuth();
   const [matches, setMatches] = useState<Match[]>([]);
   const [filter, setFilter] = useState<'all' | 'live' | 'upcoming' | 'completed'>('all');
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,9 @@ const Dashboard: React.FC = () => {
   };
 
   const routeForMatch = (match: Match) => {
+    if (!user?.is_scorer) {
+      return `/matches/${match.id}/score`;
+    }
     switch (match.status) {
       case 'upcoming': return `/matches/${match.id}/squads`;
       case 'toss_pending': return `/matches/${match.id}/toss`;
@@ -65,11 +70,17 @@ const Dashboard: React.FC = () => {
       <div className="page-header-row">
         <div>
           <h1 className="page-title">📊 Match Center</h1>
-          <p className="page-description">Manage tournament matches, record ball-by-ball live scores & view results</p>
+          <p className="page-description">
+            {user?.is_scorer
+              ? 'Manage tournament matches, record ball-by-ball live scores & view results'
+              : 'Live cricket scores, ball-by-ball updates & match scorecards'}
+          </p>
         </div>
-        <Link to="/matches/new" className="btn-stitch-primary">
-          ✨ + New Match
-        </Link>
+        {user?.is_scorer && (
+          <Link to="/matches/new" className="btn-stitch-primary">
+            ✨ + New Match
+          </Link>
+        )}
       </div>
 
       {/* Filter Tabs */}
@@ -111,10 +122,14 @@ const Dashboard: React.FC = () => {
         <div className="stitch-card text-center empty-matches-box">
           <span className="empty-icon">🏏</span>
           <h3>No {filter !== 'all' ? filter : ''} matches found</h3>
-          <p className="text-muted mt-1">Create your first match to start live scoring!</p>
-          <Link to="/matches/new" className="btn-stitch-primary mt-4">
-            ✨ Create New Match
-          </Link>
+          {user?.is_scorer && (
+            <>
+              <p className="text-muted mt-1">Create your first match to start live scoring!</p>
+              <Link to="/matches/new" className="btn-stitch-primary mt-4">
+                ✨ Create New Match
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="matches-grid">
@@ -154,16 +169,20 @@ const Dashboard: React.FC = () => {
                     style={{ flex: 1 }}
                     onClick={() => navigate(routeForMatch(match))}
                   >
-                    {isLive ? '🏏 Continue Scoring' : match.status === 'completed' ? '📊 View Result' : '⚙️ Match Setup'}
+                    {user?.is_scorer
+                      ? (isLive ? '🏏 Continue Scoring' : match.status === 'completed' ? '📊 View Result' : '⚙️ Match Setup')
+                      : '📊 View Match'}
                   </button>
-                  <button
-                    type="button"
-                    className="btn-table-action delete"
-                    title="Delete match (Danger Zone)"
-                    onClick={(e) => handleDeleteMatch(e, match.id, match.name || 'Match')}
-                  >
-                    🗑️
-                  </button>
+                  {user?.is_scorer && (
+                    <button
+                      type="button"
+                      className="btn-table-action delete"
+                      title="Delete match (Danger Zone)"
+                      onClick={(e) => handleDeleteMatch(e, match.id, match.name || 'Match')}
+                    >
+                      🗑️
+                    </button>
+                  )}
                 </div>
               </div>
             );

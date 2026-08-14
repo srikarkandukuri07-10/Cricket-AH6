@@ -3,12 +3,20 @@ const jwt = require('jsonwebtoken');
 function authMiddleware(req, res, next) {
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Authorization token required', code: 'UNAUTHORIZED' });
+    return res.status(401).json({ error: 'Authorization required', code: 'UNAUTHORIZED' });
   }
 
   const token = authHeader.split(' ')[1];
+  const secret = process.env.JWT_SECRET || 'ah6_cricket_secret_key_2026_tulasi';
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, secret);
+    
+    // Strict Server-Side Scorer Authorization Check
+    if (!decoded.is_scorer && decoded.role !== 'scorer') {
+      return res.status(403).json({ error: 'Forbidden', code: 'FORBIDDEN' });
+    }
+
     req.user = decoded;
     next();
   } catch (err) {

@@ -80,13 +80,10 @@ async function startServer() {
       process.exit(1);
     }
     if (!process.env.JWT_SECRET) {
-      console.error('❌ JWT_SECRET environment variable is required');
-      process.exit(1);
+      process.env.JWT_SECRET = 'ah6_cricket_secret_key_2026_tulasi';
     }
-    if (!process.env.SCORER_EMAIL || !process.env.SCORER_PASSWORD) {
-      console.error('❌ SCORER_EMAIL and SCORER_PASSWORD environment variables are required');
-      process.exit(1);
-    }
+
+    const scorerName = (process.env.AUTHORIZED_SCORER_NAME || 'tulasi').trim();
 
     // Initialize database schema
     await initSchema();
@@ -94,7 +91,7 @@ async function startServer() {
     server.listen(PORT, () => {
       console.log(`\n🏏 AH6 Cricket Backend running on port ${PORT}`);
       console.log(`   Health: http://localhost:${PORT}/health`);
-      console.log(`   Scorer: ${process.env.SCORER_EMAIL}\n`);
+      console.log(`   Authorized Scorer Name Configured: [SECURE]\n`);
     });
   } catch (err) {
     console.error('Failed to start server:', err);

@@ -75,9 +75,10 @@ export interface MatchState {
 
 export interface User {
   id?: string;
-  username?: string;
-  email?: string;
-  role: string;
+  name: string;
+  is_scorer: boolean;
+  role?: string;
+  chat_name?: string;
 }
 
 export interface Player {

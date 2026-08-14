@@ -3,12 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { getSocket } from '../lib/socket';
 import { useMatchState } from '../hooks/useMatchState';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const LiveScoringPage: React.FC = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
   const { matchState, loading } = useMatchState(matchId);
+  const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
   // Modals
@@ -148,13 +150,15 @@ const LiveScoringPage: React.FC = () => {
           </h1>
           <p className="page-description">{matchState.name || 'AH6 Tournament Match'}</p>
         </div>
-        <button
-          className="btn-stitch-secondary btn-compact"
-          onClick={undoLastBall}
-          disabled={submitting}
-        >
-          ↩️ Undo Ball
-        </button>
+        {user?.is_scorer && (
+          <button
+            className="btn-stitch-secondary btn-compact"
+            onClick={undoLastBall}
+            disabled={submitting}
+          >
+            ↩️ Undo Ball
+          </button>
+        )}
       </div>
 
       {/* Hero Score Banner */}
@@ -257,106 +261,109 @@ const LiveScoringPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Scoring Pad Grid */}
-      <div className="stitch-card p-6">
-        <h3 className="section-tag mb-4 text-center">SCORING PAD</h3>
+      {/* Main Scoring Pad Grid & Danger Zone (Scorer Only) */}
+      {user?.is_scorer && (
+        <>
+          <div className="stitch-card p-6">
+            <h3 className="section-tag mb-4 text-center">SCORING PAD</h3>
 
-        <div className="scoring-pad-grid">
-          <button
-            className="score-btn score-6"
-            disabled={submitting}
-            onClick={() => recordBall({ bat_runs: 6, extra_runs: 0, extra_type: 'none', is_wicket: false })}
-          >
-            6
-          </button>
-          <button
-            className="score-btn score-4"
-            disabled={submitting}
-            onClick={() => recordBall({ bat_runs: 4, extra_runs: 0, extra_type: 'none', is_wicket: false })}
-          >
-            4
-          </button>
-          <button
-            className="score-btn score-run"
-            disabled={submitting}
-            onClick={() => recordBall({ bat_runs: 3, extra_runs: 0, extra_type: 'none', is_wicket: false })}
-          >
-            3
-          </button>
+            <div className="scoring-pad-grid">
+              <button
+                className="score-btn score-6"
+                disabled={submitting}
+                onClick={() => recordBall({ bat_runs: 6, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+              >
+                6
+              </button>
+              <button
+                className="score-btn score-4"
+                disabled={submitting}
+                onClick={() => recordBall({ bat_runs: 4, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+              >
+                4
+              </button>
+              <button
+                className="score-btn score-run"
+                disabled={submitting}
+                onClick={() => recordBall({ bat_runs: 3, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+              >
+                3
+              </button>
 
-          <button
-            className="score-btn score-run"
-            disabled={submitting}
-            onClick={() => recordBall({ bat_runs: 2, extra_runs: 0, extra_type: 'none', is_wicket: false })}
-          >
-            2
-          </button>
-          <button
-            className="score-btn score-run"
-            disabled={submitting}
-            onClick={() => recordBall({ bat_runs: 1, extra_runs: 0, extra_type: 'none', is_wicket: false })}
-          >
-            1
-          </button>
-          <button
-            className="score-btn score-dot"
-            disabled={submitting}
-            onClick={() => recordBall({ bat_runs: 0, extra_runs: 0, extra_type: 'none', is_wicket: false })}
-          >
-            •
-          </button>
+              <button
+                className="score-btn score-run"
+                disabled={submitting}
+                onClick={() => recordBall({ bat_runs: 2, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+              >
+                2
+              </button>
+              <button
+                className="score-btn score-run"
+                disabled={submitting}
+                onClick={() => recordBall({ bat_runs: 1, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+              >
+                1
+              </button>
+              <button
+                className="score-btn score-dot"
+                disabled={submitting}
+                onClick={() => recordBall({ bat_runs: 0, extra_runs: 0, extra_type: 'none', is_wicket: false })}
+              >
+                •
+              </button>
 
-          <button
-            className="score-btn score-wicket span-3"
-            disabled={submitting}
-            onClick={() => {
-              setWDismissed(current_striker?.player_id || '');
-              loadBatters();
-              setShowWicketModal(true);
-            }}
-          >
-            🚨 WICKET OUT
-          </button>
+              <button
+                className="score-btn score-wicket span-3"
+                disabled={submitting}
+                onClick={() => {
+                  setWDismissed(current_striker?.player_id || '');
+                  loadBatters();
+                  setShowWicketModal(true);
+                }}
+              >
+                🚨 WICKET OUT
+              </button>
 
-          <button
-            className="score-btn score-extra"
-            disabled={submitting}
-            onClick={() => setShowExtrasModal({ type: 'NB' })}
-          >
-            NO BALL
-          </button>
-          <button
-            className="score-btn score-extra"
-            disabled={submitting}
-            onClick={() => setShowExtrasModal({ type: 'WIDE' })}
-          >
-            WIDE
-          </button>
-          <button
-            className="score-btn score-extra"
-            disabled={submitting}
-            onClick={() => setShowExtrasModal({ type: 'BYE' })}
-          >
-            BYE / LB
-          </button>
-        </div>
-      </div>
+              <button
+                className="score-btn score-extra"
+                disabled={submitting}
+                onClick={() => setShowExtrasModal({ type: 'NB' })}
+              >
+                NO BALL
+              </button>
+              <button
+                className="score-btn score-extra"
+                disabled={submitting}
+                onClick={() => setShowExtrasModal({ type: 'WIDE' })}
+              >
+                WIDE
+              </button>
+              <button
+                className="score-btn score-extra"
+                disabled={submitting}
+                onClick={() => setShowExtrasModal({ type: 'BYE' })}
+              >
+                BYE / LB
+              </button>
+            </div>
+          </div>
 
-      {/* DANGER ZONE CARD */}
-      <div className="stitch-card danger-zone-box mt-6 p-6">
-        <div className="danger-zone-header mb-3">
-          <h3 className="danger-zone-title">⚠️ Danger Zone</h3>
-          <p className="danger-zone-desc">Permanently cancel & delete this match and all scoring history</p>
-        </div>
-        <button
-          type="button"
-          className="btn-stitch-danger width-100"
-          onClick={handleDeleteMatch}
-          disabled={submitting}
-        >
-          🗑️ Delete Ongoing Match
-        </button>
-      </div>
+          <div className="stitch-card danger-zone-box mt-6 p-6">
+            <div className="danger-zone-header mb-3">
+              <h3 className="danger-zone-title">⚠️ Danger Zone</h3>
+              <p className="danger-zone-desc">Permanently cancel & delete this match and all scoring history</p>
+            </div>
+            <button
+              type="button"
+              className="btn-stitch-danger width-100"
+              onClick={handleDeleteMatch}
+              disabled={submitting}
+            >
+              🗑️ Delete Ongoing Match
+            </button>
+          </div>
+        </>
+      )}
 
       {/* WICKET MODAL */}
       {showWicketModal && (

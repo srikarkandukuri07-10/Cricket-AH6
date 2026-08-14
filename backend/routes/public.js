@@ -434,16 +434,18 @@ router.get('/admin/matches/:matchId/available-batters', async (req, res) => {
       return res.json(battersList);
     }
 
-    // Get players who have already batted
+    // Get players who have already batted or been dismissed
     const battedRes = await db.query(`
       SELECT DISTINCT striker_id as player_id FROM ball_events WHERE innings_id = $1
       UNION
       SELECT DISTINCT non_striker_id as player_id FROM ball_events WHERE innings_id = $1
+      UNION
+      SELECT DISTINCT dismissed_batter_id as player_id FROM ball_events WHERE innings_id = $1 AND dismissed_batter_id IS NOT NULL
     `, [innings.id]);
 
-    const battedIds = new Set(battedRes.rows.map(r => r.player_id));
+    const battedIds = new Set(battedRes.rows.map(r => r.player_id).filter(Boolean));
 
-    // Get current batsmen from last ball
+    // Get current active batsmen from last ball or initial positions
     const lastBallRes = await db.query(
       'SELECT next_striker_id, next_non_striker_id FROM ball_events WHERE innings_id = $1 ORDER BY sequence_number DESC LIMIT 1',
       [innings.id]
@@ -454,11 +456,14 @@ router.get('/admin/matches/:matchId/available-batters', async (req, res) => {
       const lb = lastBallRes.rows[0];
       if (lb.next_striker_id) currentBatsmen.add(lb.next_striker_id);
       if (lb.next_non_striker_id) currentBatsmen.add(lb.next_non_striker_id);
+    } else {
+      if (innings.initial_striker_id) currentBatsmen.add(innings.initial_striker_id);
+      if (innings.initial_non_striker_id) currentBatsmen.add(innings.initial_non_striker_id);
     }
 
-    // Return players who have NOT batted yet
+    // Return players who are not currently batting and have not batted/been dismissed yet
     const available = battersList.filter(p =>
-      !battedIds.has(p.player_id) && !currentBatsmen.has(p.player_id)
+      !currentBatsmen.has(p.player_id) && !battedIds.has(p.player_id)
     );
 
     res.json(available);

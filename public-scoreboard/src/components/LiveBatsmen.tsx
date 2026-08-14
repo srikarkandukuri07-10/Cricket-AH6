@@ -30,7 +30,7 @@ export default function LiveBatsmen({ match }: { match: MatchState }) {
               <td>{current_striker.sr.toFixed(1)}</td>
             </tr>
           )}
-          {current_non_striker && (
+          {current_non_striker && current_non_striker.player_id !== current_striker?.player_id && (
             <tr>
               <td className="text-left">{current_non_striker.name}</td>
               <td className="bold">{current_non_striker.runs}</td>

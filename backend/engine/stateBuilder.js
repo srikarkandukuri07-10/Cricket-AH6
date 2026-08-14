@@ -209,7 +209,7 @@ async function buildMatchState(matchId) {
             sr: sData?.balls > 0 ? parseFloat(((sData.runs / sData.balls) * 100).toFixed(2)) : 0,
           };
         }
-        if (inningsState.currentNonStriker) {
+        if (inningsState.currentNonStriker && inningsState.currentNonStriker !== inningsState.currentStriker) {
           const nsData = inningsState.batting[inningsState.currentNonStriker];
           currentNonStriker = {
             player_id: inningsState.currentNonStriker,
@@ -234,6 +234,41 @@ async function buildMatchState(matchId) {
           };
         }
       }
+    } else if (currentInnings) {
+      // 0 balls bowled yet — read initial player IDs from currentInnings
+      const playerNames = {};
+      const allPlayersRes = await db.query(
+        `SELECT id, name FROM players WHERE team_id IN ($1, $2)`,
+        [match.team_a_id, match.team_b_id]
+      );
+      allPlayersRes.rows.forEach(p => { playerNames[p.id] = p.name; });
+
+      if (currentInnings.initial_striker_id) {
+        currentStriker = {
+          player_id: currentInnings.initial_striker_id,
+          name: playerNames[currentInnings.initial_striker_id] || 'Striker',
+          runs: 0, balls: 0, fours: 0, sixes: 0, sr: 0
+        };
+      }
+      if (currentInnings.initial_non_striker_id && currentInnings.initial_non_striker_id !== currentInnings.initial_striker_id) {
+        currentNonStriker = {
+          player_id: currentInnings.initial_non_striker_id,
+          name: playerNames[currentInnings.initial_non_striker_id] || 'Non-Striker',
+          runs: 0, balls: 0, fours: 0, sixes: 0, sr: 0
+        };
+      }
+      if (currentInnings.initial_bowler_id) {
+        currentBowler = {
+          player_id: currentInnings.initial_bowler_id,
+          name: playerNames[currentInnings.initial_bowler_id] || 'Bowler',
+          overs_display: '0.0', runs_conceded: 0, wickets: 0, maidens: 0, economy: 0
+        };
+      }
+    }
+
+    // Double safeguard: if striker and non-striker are identical, remove non-striker
+    if (currentStriker && currentNonStriker && currentStriker.player_id === currentNonStriker.player_id) {
+      currentNonStriker = null;
     }
   }
 

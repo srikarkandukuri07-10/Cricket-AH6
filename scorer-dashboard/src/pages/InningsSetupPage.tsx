@@ -57,9 +57,17 @@ const InningsSetupPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="stitch-form-stack">
           <div className="input-group">
             <label>🏏 Opening Striker *</label>
-            <select value={striker} onChange={e => setStriker(e.target.value)} required>
+            <select
+              value={striker}
+              onChange={e => {
+                const val = e.target.value;
+                setStriker(val);
+                if (val === nonStriker) setNonStriker('');
+              }}
+              required
+            >
               <option value="">-- Select Striker --</option>
-              {batters.map(b => (
+              {batters.filter(b => b.player_id !== nonStriker).map(b => (
                 <option key={b.player_id} value={b.player_id}>{b.name}</option>
               ))}
             </select>
@@ -67,9 +75,17 @@ const InningsSetupPage: React.FC = () => {
 
           <div className="input-group">
             <label>🏏 Opening Non-Striker *</label>
-            <select value={nonStriker} onChange={e => setNonStriker(e.target.value)} required>
+            <select
+              value={nonStriker}
+              onChange={e => {
+                const val = e.target.value;
+                setNonStriker(val);
+                if (val === striker) setStriker('');
+              }}
+              required
+            >
               <option value="">-- Select Non-Striker --</option>
-              {batters.map(b => (
+              {batters.filter(b => b.player_id !== striker).map(b => (
                 <option key={b.player_id} value={b.player_id}>{b.name}</option>
               ))}
             </select>

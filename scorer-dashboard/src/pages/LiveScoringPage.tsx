@@ -222,14 +222,16 @@ const LiveScoringPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="active-batsman-row mb-4 flex-between">
-          <div>
-            <span className="text-body">{current_non_striker?.name || 'Non-Striker'}</span>
+        {current_non_striker && current_non_striker.player_id !== current_striker?.player_id && (
+          <div className="active-batsman-row mb-4 flex-between">
+            <div>
+              <span className="text-body">{current_non_striker.name}</span>
+            </div>
+            <div className="font-bold text-body">
+              {current_non_striker.runs} <span className="text-muted font-normal">({current_non_striker.balls}b)</span>
+            </div>
           </div>
-          <div className="font-bold text-body">
-            {current_non_striker?.runs || 0} <span className="text-muted font-normal">({current_non_striker?.balls || 0}b)</span>
-          </div>
-        </div>
+        )}
 
         <div className="border-top-subtle pt-3 flex-between">
           <span className="section-tag">BOWLER</span>
@@ -353,9 +355,11 @@ const LiveScoringPage: React.FC = () => {
                 <label>New Batter Entering</label>
                 <select value={wNewBatter} onChange={e => setWNewBatter(e.target.value)}>
                   <option value="">-- Select New Batter --</option>
-                  {availableBatters.map(b => (
-                    <option key={b.player_id} value={b.player_id}>{b.name}</option>
-                  ))}
+                  {availableBatters
+                    .filter(b => b.player_id !== current_striker?.player_id && b.player_id !== current_non_striker?.player_id)
+                    .map(b => (
+                      <option key={b.player_id} value={b.player_id}>{b.name}</option>
+                    ))}
                 </select>
               </div>
 

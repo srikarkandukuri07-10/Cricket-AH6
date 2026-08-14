@@ -282,6 +282,9 @@ router.post('/matches/:matchId/start-innings', async (req, res) => {
     if (!striker_id || !non_striker_id || !bowler_id) {
       return res.status(400).json({ error: 'Striker, non-striker, and bowler required' });
     }
+    if (striker_id === non_striker_id) {
+      return res.status(400).json({ error: 'Striker and non-striker must be different players' });
+    }
 
     const matchRes = await db.query('SELECT * FROM matches WHERE id = $1', [req.params.matchId]);
     if (matchRes.rows.length === 0) return res.status(404).json({ error: 'Match not found' });

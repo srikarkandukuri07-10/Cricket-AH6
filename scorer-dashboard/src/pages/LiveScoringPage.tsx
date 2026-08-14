@@ -74,7 +74,12 @@ const LiveScoringPage: React.FC = () => {
     if (!matchState?.current_innings?.id) return;
     setSubmitting(true);
     try {
-      await api.post(`/api/admin/innings/${matchState.current_innings.id}/balls`, ballPayload);
+      const { data } = await api.post(`/api/admin/innings/${matchState.current_innings.id}/balls`, ballPayload);
+      if (data.state?.status === 'innings_break') {
+        toast.success('🎉 1st Innings Completed! Target set for 2nd Innings.');
+      } else if (data.state?.status === 'completed') {
+        toast.success('🏆 Match Completed!');
+      }
     } catch (err: any) {
       const msg = err.response?.data?.error || 'Failed to record ball';
       toast.error(msg);
@@ -160,6 +165,57 @@ const LiveScoringPage: React.FC = () => {
           </button>
         )}
       </div>
+
+      {/* 1st Innings Completed Banner */}
+      {(matchState.status === 'innings_break' || (current_innings?.is_complete && current_innings?.innings_number === 1)) && (
+        <div className="stitch-card border-glow p-6 text-center mb-4" style={{ background: '#f5f3ff', borderColor: '#818cf8' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🏏</div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary-indigo)' }}>
+            1st Innings Completed!
+          </h2>
+          <p className="text-body mt-2 mb-3" style={{ fontSize: '1rem', fontWeight: 700 }}>
+            {matchState.innings_summary[0]?.batting_team_name} scored {matchState.innings_summary[0]?.total_runs}/{matchState.innings_summary[0]?.total_wickets} in {matchState.innings_summary[0]?.overs_display} Overs
+          </p>
+          {matchState.innings_summary[0] && (
+            <div style={{ background: '#ffffff', padding: '12px', borderRadius: '12px', border: '1px solid #ddd6fe', fontWeight: 800, fontSize: '1.1rem', color: '#b45309' }}>
+              🎯 Target for 2nd Innings: {matchState.innings_summary[0].total_runs + 1} Runs in {matchState.overs_per_innings} Overs
+            </div>
+          )}
+          {user?.is_scorer && (
+            <button
+              type="button"
+              className="btn-stitch-primary width-100 mt-4"
+              style={{ padding: '14px 24px', fontSize: '1.05rem' }}
+              onClick={() => navigate(`/matches/${matchId}/innings-setup`)}
+            >
+              ⚙️ Start 2nd Innings Setup →
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 2nd Innings Target Tracker Box */}
+      {current_innings?.target && (
+        <div className="stitch-card p-4 mb-4" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', color: '#ffffff', borderRadius: '16px' }}>
+          <div className="flex-between mb-2">
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.8px', color: '#cbd5e1' }}>
+              🎯 TARGET EQUATION
+            </span>
+            <span style={{ background: '#f59e0b', color: '#ffffff', fontWeight: 800, fontSize: '0.8rem', padding: '3px 10px', borderRadius: '9999px' }}>
+              Target: {current_innings.target}
+            </span>
+          </div>
+
+          <div className="text-center my-3" style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fde047' }}>
+            Need <span style={{ fontSize: '1.6rem', color: '#ffffff', textDecoration: 'underline' }}>{current_innings.runs_needed ?? Math.max(0, current_innings.target - current_innings.total_runs)}</span> runs from <span style={{ fontSize: '1.6rem', color: '#ffffff', textDecoration: 'underline' }}>{current_innings.balls_remaining ?? Math.max(0, (matchState.overs_per_innings * 6) - current_innings.total_legal_balls)}</span> balls
+          </div>
+
+          <div className="flex-between pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.15)', fontSize: '0.9rem', fontWeight: 700 }}>
+            <span>CRR: <strong style={{ color: '#38bdf8' }}>{(current_innings.crr || 0).toFixed(2)}</strong></span>
+            <span>RRR: <strong style={{ color: '#f43f5e' }}>{current_innings.rrr !== null && current_innings.rrr !== undefined ? current_innings.rrr.toFixed(2) : '0.00'}</strong></span>
+          </div>
+        </div>
+      )}
 
       {/* Hero Score Banner */}
       <div className="hero-stat-card mb-4">

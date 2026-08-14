@@ -46,7 +46,7 @@ const LoginPage: React.FC = () => {
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="e.g. Rahul / Tulasi"
+              placeholder=""
               required
               autoFocus
               style={{ fontSize: '1.1rem', height: '52px' }}

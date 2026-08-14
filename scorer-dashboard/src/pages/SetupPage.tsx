@@ -16,6 +16,7 @@ interface Team {
   name: string;
   short_name: string;
   primary_color?: string;
+  category?: 'adults' | 'kids';
   tournament_id?: string;
   players?: Player[];
 }
@@ -26,17 +27,22 @@ const SetupPage: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [loadingSquad, setLoadingSquad] = useState<boolean>(false);
 
+  // Category Section State ('adults' | 'kids')
+  const [activeCategory, setActiveCategory] = useState<'adults' | 'kids'>('adults');
+
   // New Team Modal / Form state
   const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamShort, setNewTeamShort] = useState('');
   const [newTeamColor, setNewTeamColor] = useState('#ff5722');
+  const [newTeamCategory, setNewTeamCategory] = useState<'adults' | 'kids'>('adults');
 
   // Edit Team Modal state
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [editTeamName, setEditTeamName] = useState('');
   const [editTeamShort, setEditTeamShort] = useState('');
   const [editTeamColor, setEditTeamColor] = useState('#6366f1');
+  const [editTeamCategory, setEditTeamCategory] = useState<'adults' | 'kids'>('adults');
 
   // Player Form state
   const [playerName, setPlayerName] = useState('');
@@ -95,8 +101,9 @@ const SetupPage: React.FC = () => {
         name: newTeamName.trim(),
         short_name: shortCode,
         primary_color: newTeamColor,
+        category: newTeamCategory,
       });
-      toast.success(`Team "${data.name}" created successfully!`);
+      toast.success(`Team "${data.name}" added to ${data.category === 'kids' ? 'Kids' : 'Adults'}!`);
       setNewTeamName('');
       setNewTeamShort('');
       setShowCreateTeam(false);
@@ -104,6 +111,7 @@ const SetupPage: React.FC = () => {
       // Refresh teams list and select the new team
       const { data: updatedTeams } = await api.get('/api/teams');
       setTeams(updatedTeams);
+      setActiveCategory(data.category || 'adults');
       setSelectedTeamId(data.id);
       loadSquad(data.id);
     } catch (e) {
@@ -195,6 +203,7 @@ const SetupPage: React.FC = () => {
     setEditTeamName(team.name);
     setEditTeamShort(team.short_name);
     setEditTeamColor(team.primary_color || '#6366f1');
+    setEditTeamCategory(team.category || 'adults');
   };
 
   const handleUpdateTeam = async (e: React.FormEvent) => {
@@ -208,6 +217,7 @@ const SetupPage: React.FC = () => {
         name: editTeamName.trim(),
         short_name: editTeamShort.trim().toUpperCase(),
         primary_color: editTeamColor,
+        category: editTeamCategory,
       });
       toast.success(`Updated team "${updated.name}"!`);
       setEditingTeam(null);
@@ -216,7 +226,7 @@ const SetupPage: React.FC = () => {
       const { data: updatedTeams } = await api.get('/api/teams');
       setTeams(updatedTeams);
       if (selectedTeamId === editingTeam.id) {
-        setSelectedTeam(prev => prev ? { ...prev, name: updated.name, short_name: updated.short_name, primary_color: updated.primary_color } : null);
+        setSelectedTeam(prev => prev ? { ...prev, name: updated.name, short_name: updated.short_name, primary_color: updated.primary_color, category: updated.category } : null);
       }
     } catch (e) {
       toast.error('Failed to update team');
@@ -270,6 +280,60 @@ const SetupPage: React.FC = () => {
         </button>
       </div>
 
+      {/* TOURNAMENT SECTIONS: ADULTS vs KIDS CARDS */}
+      <div className="stitch-card mb-6 p-4" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+        <label className="section-tag mb-2" style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800 }}>
+          TOURNAMENT SECTIONS (SELECT TO VIEW TEAMS)
+        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          <div
+            className={`card p-4 text-center ${activeCategory === 'adults' ? 'active-section-card' : ''}`}
+            style={{
+              cursor: 'pointer',
+              borderRadius: '14px',
+              border: activeCategory === 'adults' ? '2px solid #4f46e5' : '1px solid #cbd5e1',
+              background: activeCategory === 'adults' ? 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)' : '#ffffff',
+              boxShadow: activeCategory === 'adults' ? '0 4px 12px rgba(79, 70, 229, 0.15)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+            onClick={() => {
+              setActiveCategory('adults');
+              const adultTeams = teams.filter(t => (t.category || 'adults') === 'adults');
+              if (adultTeams.length > 0) selectTeam(adultTeams[0].id);
+            }}
+          >
+            <div style={{ fontSize: '2rem' }}>👨‍💼</div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e1b4b', marginTop: '4px' }}>ADULTS CARD</h3>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#4f46e5' }}>
+              {teams.filter(t => (t.category || 'adults') === 'adults').length} Registered Teams
+            </span>
+          </div>
+
+          <div
+            className={`card p-4 text-center ${activeCategory === 'kids' ? 'active-section-card' : ''}`}
+            style={{
+              cursor: 'pointer',
+              borderRadius: '14px',
+              border: activeCategory === 'kids' ? '2px solid #059669' : '1px solid #cbd5e1',
+              background: activeCategory === 'kids' ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' : '#ffffff',
+              boxShadow: activeCategory === 'kids' ? '0 4px 12px rgba(5, 150, 105, 0.15)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+            onClick={() => {
+              setActiveCategory('kids');
+              const kidsTeams = teams.filter(t => t.category === 'kids');
+              if (kidsTeams.length > 0) selectTeam(kidsTeams[0].id);
+            }}
+          >
+            <div style={{ fontSize: '2rem' }}>👶</div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#064e3b', marginTop: '4px' }}>KIDS CARD</h3>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#059669' }}>
+              {teams.filter(t => t.category === 'kids').length} Registered Teams
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* CREATE NEW TEAM FORM CARD */}
       {showCreateTeam && (
         <div className="stitch-card mb-6 border-glow">
@@ -278,10 +342,21 @@ const SetupPage: React.FC = () => {
           </div>
           <form onSubmit={handleCreateTeam} className="stitch-form-grid">
             <div className="input-group">
+              <label>Tournament Section *</label>
+              <select
+                value={newTeamCategory}
+                onChange={e => setNewTeamCategory(e.target.value as 'adults' | 'kids')}
+              >
+                <option value="adults">👨‍💼 Adults Section</option>
+                <option value="kids">👶 Kids Section</option>
+              </select>
+            </div>
+
+            <div className="input-group">
               <label>Team Name *</label>
               <input
                 type="text"
-                placeholder="e.g. Akshita Warriors"
+                placeholder="e.g. Akshita Warriors / Junior Superstars"
                 value={newTeamName}
                 onChange={e => setNewTeamName(e.target.value)}
                 required
@@ -324,58 +399,67 @@ const SetupPage: React.FC = () => {
       {/* STEP 1: TEAM SELECTOR BAR */}
       <div className="stitch-card mb-6">
         <div className="flex-between mb-3">
-          <label className="section-tag">STEP 1: SELECT TEAM TO MANAGE PLAYERS</label>
-          {teams.length > 0 && (
-            <span className="count-pill">{teams.length} Teams Available</span>
-          )}
+          <label className="section-tag">
+            MANAGING {activeCategory === 'adults' ? '👨‍💼 ADULTS' : '👶 KIDS'} TEAMS
+          </label>
+          <span className="count-pill">
+            {teams.filter(t => (t.category || 'adults') === activeCategory).length} Teams in {activeCategory.toUpperCase()}
+          </span>
         </div>
 
-        {teams.length === 0 ? (
-          <div className="empty-state-card">
-            <p>No teams exist yet!</p>
+        {teams.filter(t => (t.category || 'adults') === activeCategory).length === 0 ? (
+          <div className="empty-state-card text-center p-6">
+            <p style={{ fontSize: '1.05rem', fontWeight: 700 }}>
+              No {activeCategory === 'adults' ? 'Adults' : 'Kids'} teams created yet!
+            </p>
             <button
               className="btn-stitch-primary mt-3"
-              onClick={() => setShowCreateTeam(true)}
+              onClick={() => {
+                setNewTeamCategory(activeCategory);
+                setShowCreateTeam(true);
+              }}
             >
-              ➕ Create Your First Team
+              ➕ Add First {activeCategory === 'adults' ? 'Adults' : 'Kids'} Team
             </button>
           </div>
         ) : (
           <div className="team-pill-grid">
-            {teams.map(t => (
-              <div
-                key={t.id}
-                className={`team-pill-card ${selectedTeamId === t.id ? 'active' : ''}`}
-                style={{ '--accent-color': t.primary_color || '#6366f1' } as any}
-                onClick={() => selectTeam(t.id)}
-              >
-                <span className="team-badge-circle" style={{ backgroundColor: t.primary_color || '#6366f1' }}>
-                  {t.short_name}
-                </span>
-                <div className="team-text-wrap">
-                  <span className="team-name-str">{t.name}</span>
-                  <span className="team-code-str">Code: {t.short_name}</span>
+            {teams
+              .filter(t => (t.category || 'adults') === activeCategory)
+              .map(t => (
+                <div
+                  key={t.id}
+                  className={`team-pill-card ${selectedTeamId === t.id ? 'active' : ''}`}
+                  style={{ '--accent-color': t.primary_color || '#6366f1' } as any}
+                  onClick={() => selectTeam(t.id)}
+                >
+                  <span className="team-badge-circle" style={{ backgroundColor: t.primary_color || '#6366f1' }}>
+                    {t.short_name}
+                  </span>
+                  <div className="team-text-wrap">
+                    <span className="team-name-str">{t.name}</span>
+                    <span className="team-code-str">Code: {t.short_name}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      className="btn-table-action edit"
+                      title={`Edit team ${t.name}`}
+                      onClick={(e) => handleStartEditTeam(e, t)}
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-table-action delete"
+                      title={`Delete team ${t.name}`}
+                      onClick={(e) => handleDeleteTeam(e, t.id, t.name)}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  <button
-                    type="button"
-                    className="btn-table-action edit"
-                    title={`Edit team ${t.name}`}
-                    onClick={(e) => handleStartEditTeam(e, t)}
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-table-action delete"
-                    title={`Delete team ${t.name}`}
-                    onClick={(e) => handleDeleteTeam(e, t.id, t.name)}
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </div>
@@ -534,6 +618,17 @@ const SetupPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleUpdateTeam} className="stitch-form-stack">
+              <div className="input-group">
+                <label>Tournament Section *</label>
+                <select
+                  value={editTeamCategory}
+                  onChange={e => setEditTeamCategory(e.target.value as 'adults' | 'kids')}
+                >
+                  <option value="adults">👨‍💼 Adults Section</option>
+                  <option value="kids">👶 Kids Section</option>
+                </select>
+              </div>
+
               <div className="input-group">
                 <label>Team Name *</label>
                 <input

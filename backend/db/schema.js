@@ -133,7 +133,14 @@ async function initSchema() {
     await db.query(SCHEMA);
     // Remove legacy role constraint if exists so any role string is accepted
     await db.query(`ALTER TABLE players DROP CONSTRAINT IF EXISTS players_role_check`).catch(() => {});
-    console.log('✅ Database schema initialized');
+
+    // Add category column to teams and matches tables
+    await db.query(`ALTER TABLE teams ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'adults'`).catch(() => {});
+    await db.query(`UPDATE teams SET category = 'adults' WHERE category IS NULL`).catch(() => {});
+    await db.query(`ALTER TABLE matches ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'adults'`).catch(() => {});
+    await db.query(`UPDATE matches SET category = 'adults' WHERE category IS NULL`).catch(() => {});
+
+    console.log('✅ Database schema initialized with Adults and Kids categories');
   } catch (err) {
     console.error('❌ Schema initialization failed:', err.message);
     throw err;

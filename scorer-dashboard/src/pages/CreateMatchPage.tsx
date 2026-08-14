@@ -5,12 +5,14 @@ import toast from 'react-hot-toast';
 
 const CreateMatchPage: React.FC = () => {
   const navigate = useNavigate();
+  const [matchCategory, setMatchCategory] = useState<'adults' | 'kids'>('adults');
   const [teams, setTeams] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     team_a_id: '',
     team_b_id: '',
     tournament_id: '',
+    category: 'adults',
     overs_per_innings: 10,
     max_wickets: 9,
     free_hit_on_no_ball: true
@@ -20,6 +22,8 @@ const CreateMatchPage: React.FC = () => {
     api.get('/api/teams').then(({ data }) => setTeams(data));
   }, []);
 
+  const filteredTeams = teams.filter(t => (t.category || 'adults') === matchCategory);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.team_a_id === formData.team_b_id) {
@@ -27,7 +31,7 @@ const CreateMatchPage: React.FC = () => {
       return;
     }
     try {
-      const { data } = await api.post('/api/admin/matches', formData);
+      const { data } = await api.post('/api/admin/matches', { ...formData, category: matchCategory });
       toast.success('Match created successfully!');
       navigate(`/matches/${data.id}/squads`);
     } catch (err) {
@@ -47,6 +51,21 @@ const CreateMatchPage: React.FC = () => {
       <div className="stitch-card border-glow">
         <form onSubmit={handleSubmit} className="stitch-form-stack">
           <div className="input-group">
+            <label>Match Section / Category *</label>
+            <select
+              value={matchCategory}
+              onChange={e => {
+                const cat = e.target.value as 'adults' | 'kids';
+                setMatchCategory(cat);
+                setFormData({ ...formData, team_a_id: '', team_b_id: '' });
+              }}
+            >
+              <option value="adults">👨‍💼 Adults Section Match</option>
+              <option value="kids">👶 Kids Section Match</option>
+            </select>
+          </div>
+
+          <div className="input-group">
             <label>Match Title / Description *</label>
             <input
               type="text"
@@ -59,28 +78,28 @@ const CreateMatchPage: React.FC = () => {
 
           <div className="stitch-form-grid">
             <div className="input-group">
-              <label>Team A *</label>
+              <label>Team A ({matchCategory === 'adults' ? 'Adults' : 'Kids'}) *</label>
               <select
                 value={formData.team_a_id}
                 onChange={e => setFormData({ ...formData, team_a_id: e.target.value })}
                 required
               >
                 <option value="">-- Select Team A --</option>
-                {teams.map(t => (
+                {filteredTeams.map(t => (
                   <option key={t.id} value={t.id}>{t.name} ({t.short_name})</option>
                 ))}
               </select>
             </div>
 
             <div className="input-group">
-              <label>Team B *</label>
+              <label>Team B ({matchCategory === 'adults' ? 'Adults' : 'Kids'}) *</label>
               <select
                 value={formData.team_b_id}
                 onChange={e => setFormData({ ...formData, team_b_id: e.target.value })}
                 required
               >
                 <option value="">-- Select Team B --</option>
-                {teams.map(t => (
+                {filteredTeams.map(t => (
                   <option key={t.id} value={t.id}>{t.name} ({t.short_name})</option>
                 ))}
               </select>

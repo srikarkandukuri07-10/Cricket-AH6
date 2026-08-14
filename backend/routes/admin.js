@@ -44,11 +44,11 @@ router.put('/tournaments/:id', async (req, res) => {
 
 router.post('/teams', async (req, res) => {
   try {
-    const { tournament_id, name, short_name, logo_url, primary_color } = req.body;
+    const { tournament_id, name, short_name, logo_url, primary_color, category } = req.body;
     if (!name) return res.status(400).json({ error: 'Team name required' });
     const result = await db.query(
-      'INSERT INTO teams (tournament_id, name, short_name, logo_url, primary_color) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-      [tournament_id || null, name, short_name || name.slice(0, 4).toUpperCase(), logo_url || null, primary_color || '#e8461a']
+      'INSERT INTO teams (tournament_id, name, short_name, logo_url, primary_color, category) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+      [tournament_id || null, name, short_name || name.slice(0, 4).toUpperCase(), logo_url || null, primary_color || '#e8461a', category || 'adults']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -59,15 +59,16 @@ router.post('/teams', async (req, res) => {
 
 router.put('/teams/:teamId', async (req, res) => {
   try {
-    const { name, short_name, logo_url, primary_color } = req.body;
+    const { name, short_name, logo_url, primary_color, category } = req.body;
     const result = await db.query(
       `UPDATE teams SET
         name = COALESCE($1, name),
         short_name = COALESCE($2, short_name),
         logo_url = COALESCE($3, logo_url),
-        primary_color = COALESCE($4, primary_color)
-      WHERE id = $5 RETURNING *`,
-      [name, short_name, logo_url, primary_color, req.params.teamId]
+        primary_color = COALESCE($4, primary_color),
+        category = COALESCE($5, category)
+      WHERE id = $6 RETURNING *`,
+      [name, short_name, logo_url, primary_color, category, req.params.teamId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.rows[0]);
